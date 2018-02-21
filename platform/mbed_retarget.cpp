@@ -351,7 +351,9 @@ extern "C" void PREFIX(_exit)(int return_code) {
 }
 
 extern "C" void _ttywrch(int ch) {
+#if DEVICE_SERIAL
     serial_putc(&stdio_uart, ch);
+#endif
 }
 #endif
 
@@ -709,6 +711,23 @@ extern "C" int stat(const char *path, struct stat *st) {
     }
 }
 
+extern "C" int statvfs(const char *path, struct statvfs *buf) {
+    FilePath fp(path);
+    FileSystemHandle *fs = fp.fileSystem();
+    if (fs == NULL) {
+        errno = ENODEV;
+        return -1;
+    }
+
+    int err = fs->statvfs(fp.fileName(), buf);
+    if (err < 0) {
+        errno = -err;
+        return -1;
+    } else {
+        return 0;
+    }
+}
+
 #if defined(TOOLCHAIN_GCC)
 /* prevents the exception handling name demangling code getting pulled in */
 #include "mbed_error.h"
@@ -739,6 +758,7 @@ extern "C" int errno;
 
 // Dynamic memory allocation related syscall.
 #if defined(TARGET_NUVOTON)
+
 // Overwrite _sbrk() to support two region model (heap and stack are two distinct regions).
 // __wrap__sbrk() is implemented in:
 // TARGET_NUMAKER_PFM_NUC472    targets/TARGET_NUVOTON/TARGET_NUC472/TARGET_NUMAKER_PFM_NUC472/TOOLCHAIN_GCC_ARM/nuc472_retarget.c
@@ -977,6 +997,10 @@ extern "C" void __env_unlock( struct _reent *_r )
     __rtos_env_unlock(_r);
 }
 
+#endif
+
+#if defined (__GNUC__) || defined(__CC_ARM) || (defined (__ARMCC_VERSION) && (__ARMCC_VERSION >= 6010050))
+
 #define CXA_GUARD_INIT_DONE             (1 << 0)
 #define CXA_GUARD_INIT_IN_PROGRESS      (1 << 1)
 #define CXA_GUARD_MASK                  (CXA_GUARD_INIT_DONE | CXA_GUARD_INIT_IN_PROGRESS)
@@ -1015,6 +1039,99 @@ extern "C" void __cxa_guard_abort(int *guard_object_p)
 
 #endif
 
+#if defined(MBED_MEM_TRACING_ENABLED) && (defined(__CC_ARM) || defined(__ICCARM__))
+
+// If the memory tracing is enabled, the wrappers in mbed_alloc_wrappers.cpp
+// provide the implementation for these. Note: this needs to use the wrappers
+// instead of malloc()/free() as the caller address would point to wrappers,
+// not the caller of "new" or "delete".
+extern "C" void* malloc_wrapper(size_t size, const void* caller);
+extern "C" void free_wrapper(void *ptr, const void* caller);
+    
+void *operator new(std::size_t count)
+{
+    void *buffer = malloc_wrapper(count, MBED_CALLER_ADDR());
+    if (NULL == buffer) {
+        error("Operator new out of memory\r\n");
+    }
+    return buffer;
+}
+
+void *operator new[](std::size_t count)
+{
+    void *buffer = malloc_wrapper(count, MBED_CALLER_ADDR());
+    if (NULL == buffer) {
+        error("Operator new[] out of memory\r\n");
+    }
+    return buffer;
+}
+
+void *operator new(std::size_t count, const std::nothrow_t& tag)
+{
+    return malloc_wrapper(count, MBED_CALLER_ADDR());
+}
+
+void *operator new[](std::size_t count, const std::nothrow_t& tag)
+{
+    return malloc_wrapper(count, MBED_CALLER_ADDR());
+}
+
+void operator delete(void *ptr)
+{
+    free_wrapper(ptr, MBED_CALLER_ADDR());
+}
+void operator delete[](void *ptr)
+{
+    free_wrapper(ptr, MBED_CALLER_ADDR());
+}
+
+#elif defined(MBED_MEM_TRACING_ENABLED) && defined(__GNUC__)
+
+#include <reent.h>
+
+extern "C" void* malloc_wrapper(struct _reent * r, size_t size, void * caller);
+extern "C" void free_wrapper(struct _reent * r, void * ptr, void * caller);
+
+void *operator new(std::size_t count)
+{
+    void *buffer = malloc_wrapper(_REENT, count, MBED_CALLER_ADDR());
+    if (NULL == buffer) {
+        error("Operator new out of memory\r\n");
+    }
+    return buffer;
+}
+
+void *operator new[](std::size_t count)
+{
+    void *buffer = malloc_wrapper(_REENT, count, MBED_CALLER_ADDR());
+    if (NULL == buffer) {
+        error("Operator new[] out of memory\r\n");
+    }
+    return buffer;
+}
+
+void *operator new(std::size_t count, const std::nothrow_t& tag)
+{
+    return malloc_wrapper(_REENT, count, MBED_CALLER_ADDR());
+}
+
+void *operator new[](std::size_t count, const std::nothrow_t& tag)
+{
+    return malloc_wrapper(_REENT, count, MBED_CALLER_ADDR());
+}
+
+void operator delete(void *ptr)
+{
+    free_wrapper(_REENT, ptr, MBED_CALLER_ADDR());
+}
+
+void operator delete[](void *ptr)
+{
+    free_wrapper(_REENT, ptr, MBED_CALLER_ADDR());
+}
+
+#else
+
 void *operator new(std::size_t count)
 {
     void *buffer = malloc(count);
@@ -1051,6 +1168,8 @@ void operator delete[](void *ptr)
 {
     free(ptr);
 }
+
+#endif
 
 /* @brief   standard c library clock() function.
  *
