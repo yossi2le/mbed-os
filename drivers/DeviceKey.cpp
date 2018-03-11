@@ -15,11 +15,7 @@
  */
 
 #include "drivers/DeviceKey.h"
-#if !defined(MBEDTLS_CONFIG_FILE)
 #include "mbedtls/config.h"
-#else
-#include MBEDTLS_CONFIG_FILE
-#endif
 #include "mbedtls/cmac.h"
 #include <nvstore.h>
 #include "trng_api.h"
@@ -40,39 +36,46 @@ DeviceKey::~DeviceKey()
 #error [NOT_SUPPORTED] MBEDTLS_CMAC_C needs to be enabled for this driver
 #else
 
-int DeviceKey::device_key_derive_key(const unsigned char *salt, size_t isalt_size, unsigned char *output, size_t ikey_type)
+int DeviceKey::device_key_derived_key(const unsigned char *salt, size_t isalt_size, unsigned char *output, uint16_t ikey_type)
 {
     uint32_t key_buff[DEVICE_KEY_32BYTE / sizeof(uint32_t)];
     size_t actual_size = DEVICE_KEY_32BYTE;
 
-    //First try to read the key form NVStore
     if (DEVICE_KEY_16BYTE != ikey_type && DEVICE_KEY_32BYTE != ikey_type)
     {
         return DEVICEKEY_INVALID_KEY_TYPE;
     }
 
-    int ret = read_key_from_nvstroe(key_buff, actual_size);
+    //First try to read the key form NVStore
+    int ret = read_key_from_nvstore(key_buff, actual_size);
     if (DEVICEKEY_SUCCESS != ret && DEVICEKEY_NOT_FOUND != ret)
     {
         return ret;
     }
 
-    //If the key was not find in NVStore we will create it by using TRNG and then save it to NVStore
+    //If the key was not found in NVStore we will create it by using TRNG and then save it to NVStore
     if (DEVICEKEY_NOT_FOUND == ret) {
-       if (DEVICEKEY_SUCCESS != generate_key_by_trns(key_buff,actual_size)) {
-           return ret;
-       }
+#if defined(DEVICE_TRNG)
+        ret = generate_key_by_trng(key_buff,actual_size);
+        if (DEVICEKEY_SUCCESS != ret) {
+            return ret;
+        }
 
-       if (DEVICEKEY_SUCCESS != device_key_set_value(key_buff,actual_size)) {
-           return ret;
-       }
+        ret = device_inject_root_of_trust(key_buff,actual_size);
+        if (DEVICEKEY_SUCCESS != ret) {
+            return ret;
+        }
+#else
+        return DEVICEKEY_NO_KEY_INJECTED;
+#endif
+
     }
 
     ret = get_derive_key(key_buff, actual_size, salt, isalt_size, output, ikey_type);
     return ret;
 }
 
-int DeviceKey::device_key_set_value(uint32_t *value, size_t isize)
+int DeviceKey::device_inject_root_of_trust(uint32_t *value, size_t isize)
 {
     size_t key_type;
     if (isize == 16) {
@@ -83,10 +86,10 @@ int DeviceKey::device_key_set_value(uint32_t *value, size_t isize)
         return (DEVICEKEY_INVALID_KEY_SIZE);
     }
 
-    return write_key_to_nvstroe(value, key_type);
+    return write_key_to_nvstore(value, key_type);
 }
 
-int DeviceKey::write_key_to_nvstroe(uint32_t *value, size_t isize)
+int DeviceKey::write_key_to_nvstore(uint32_t *value, size_t isize)
 {
     if (isize > 32 || isize < 16) {
         return (DEVICEKEY_INVALID_KEY_SIZE);
@@ -109,7 +112,7 @@ int DeviceKey::write_key_to_nvstroe(uint32_t *value, size_t isize)
     return DEVICEKEY_SUCCESS;
 }
 
-int DeviceKey::read_key_from_nvstroe(uint32_t *output, size_t &size)
+int DeviceKey::read_key_from_nvstore(uint32_t *output, size_t &size)
 {
     uint16_t short_size = size;
     NVStore &nvstore = NVStore::get_instance();
@@ -212,7 +215,7 @@ finish:
 }
 
 //This method is generating hardcoded 16 byte key for now!!!
-int DeviceKey::generate_key_by_trns(uint32_t *ikey_buff, size_t &size)
+int DeviceKey::generate_key_by_trng(uint32_t *ikey_buff, size_t &size)
 {
     if (size < DEVICE_KEY_16BYTE)
     {

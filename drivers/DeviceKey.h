@@ -37,6 +37,7 @@ enum DeviceKeyStatus {
     DEVICEKEY_ERR_CMAC_GENERIC_FAILURE    = -8,
     DEVICEKEY_MISSING_MBEDTLS             = -9,
     DEVICEKEY_BUFFER_TO_SMALL             = -10,
+    DEVICEKEY_NO_KEY_INJECTED             = -11,
 };
 
 #define KEY_BUFFER_SIZE 32
@@ -71,21 +72,21 @@ public:
 
     virtual ~DeviceKey();
 
-    /** Derive a new key based on the salt string. DeviceKeyType is an enum with values 128_bit and 256_bit
+    /** Derive a new key based on the salt string. key type can be with values 16 byte and 32 byte
      * @param isalt input buffer used to create the new key. Same input will generate always the same key
      * @param isalt_size size of the data in salt
      * @param output buffer to receive the derived key. Size must 16 or 32 bytes according to the key_type passed
-     * @param key_type Size of the required key (128 or 256)
+     * @param ikey_type type of the required key (16 or 32 bytes)
      * @return 0 on success, negative error code on failure
      */
-    int device_key_derive_key(const unsigned char *isalt, size_t isalt_size, unsigned char *output, size_t ikey_type);
+    int device_key_derived_key(const unsigned char *isalt, size_t isalt_size, unsigned char *output, uint16_t ikey_type);
 
     /** Set a device key into the NVStore
      * @param value input buffer contain the key.
      * @param isize size of the supplied key. must be 16Byte or 32Byte.
      * @return 0 on success, negative error code on failure
      */
-    int device_key_set_value(uint32_t *value, size_t isize);
+    int device_inject_root_of_trust(uint32_t *value, size_t isize);
 
 private:
     // Private constructor, as class is a singleton
@@ -95,11 +96,11 @@ private:
      * @param input a buffer contain some string.
      * @param isize size of the supplied input string.
      * @param ikey_buff input buffer holding the ROT key
-     * @param ikey_len size of the input key. must be 16Byte or 32Byte.
+     * @param ikey_size size of the input key. must be 16Byte or 32Byte.
      * @param output buffer for the CMAC result.
      * @return 0 on success, negative error code on failure
      */
-    int calc_cmac(const unsigned char *input, size_t isize, uint32_t *ikey_buff, int ikey_len, unsigned char *output);
+    int calc_cmac(const unsigned char *input, size_t isize, uint32_t *ikey_buff, int ikey_size, unsigned char *output);
 
     /** Read  a device key from the NVStore
      * @param output buffer contain for the key.
@@ -107,14 +108,14 @@ private:
      *             output: the actual size of the written data
      * @return 0 on success, negative error code on failure
      */
-    int read_key_from_nvstroe(uint32_t *output, size_t &size);
+    int read_key_from_nvstore(uint32_t *output, size_t &size);
 
     /** Set a device key into the NVStore
      * @param value input buffer contain the key.
      * @param isize the size of the input buffer.
      * @return 0 on success, negative error code on failure
      */
-    int write_key_to_nvstroe(uint32_t *value, size_t isize);
+    int write_key_to_nvstore(uint32_t *value, size_t isize);
 
     /** Get derive key
      * @param ikey_buff input buffer holding the ROT key
@@ -136,7 +137,7 @@ private:
      *             output: the actual written size to the buffer
      * @return 0 on success, negative error code on failure
      */
-    int generate_key_by_trns(uint32_t *ikey_buff, size_t &size);
+    int generate_key_by_trng(uint32_t *ikey_buff, size_t &size);
 };
 
 }
