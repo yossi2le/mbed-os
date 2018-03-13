@@ -24,7 +24,7 @@
 #error [NOT_SUPPORTED] MBEDTLS_CMAC_C needs to be enabled for this driver
 #else
 
-extern const int devkey_nvstore_rot_key=4;
+extern const int devkey_nvstore_rot_key = 4;
 
 namespace mbed {
 
@@ -38,7 +38,8 @@ DeviceKey::~DeviceKey()
     return;
 }
 
-int DeviceKey::device_key_derived_key(const unsigned char *salt, size_t isalt_size, unsigned char *output, uint16_t ikey_type)
+int DeviceKey::device_key_derived_key(const unsigned char *salt, size_t isalt_size, unsigned char *output,
+                                      uint16_t ikey_type)
 {
     uint32_t key_buff[DEVICE_KEY_32BYTE / sizeof(uint32_t)];
     size_t actual_size = DEVICE_KEY_32BYTE;
@@ -60,12 +61,12 @@ int DeviceKey::device_key_derived_key(const unsigned char *salt, size_t isalt_si
     //If the key was not found in NVStore we will create it by using TRNG and then save it to NVStore
     if (DEVICEKEY_NOT_FOUND == ret) {
 #if defined(DEVICE_TRNG)
-        ret = generate_key_by_trng(key_buff,actual_size);
+        ret = generate_key_by_trng(key_buff, actual_size);
         if (DEVICEKEY_SUCCESS != ret) {
             return ret;
         }
 
-        ret = device_inject_root_of_trust(key_buff,actual_size);
+        ret = device_inject_root_of_trust(key_buff, actual_size);
         if (DEVICEKEY_SUCCESS != ret) {
             return ret;
         }
@@ -90,7 +91,7 @@ int DeviceKey::write_key_to_nvstore(uint32_t *input, size_t isize)
         return DEVICEKEY_INVALID_KEY_SIZE;
     }
 
-    NVStore &nvstore = NVStore::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
     int nvStatus = nvstore.set_once(devkey_nvstore_rot_key, (uint16_t)isize, input);
     if (NVSTORE_ALREADY_EXISTS == nvStatus) {
         return DEVICEKEY_ALREADY_EXIST;
@@ -107,15 +108,15 @@ int DeviceKey::write_key_to_nvstore(uint32_t *input, size_t isize)
     return DEVICEKEY_SUCCESS;
 }
 
-int DeviceKey::read_key_from_nvstore(uint32_t *output, size_t &size)
+int DeviceKey::read_key_from_nvstore(uint32_t *output, size_t& size)
 {
     if (size > UINT16_MAX) {
         return DEVICEKEY_INVALID_PARAM;
     }
 
     uint16_t in_size = size;
-    uint16_t out_size= 0;
-    NVStore &nvstore = NVStore::get_instance();
+    uint16_t out_size = 0;
+    NVStore& nvstore = NVStore::get_instance();
     int nvStatus = nvstore.get(devkey_nvstore_rot_key, in_size, output, out_size);
     if (NVSTORE_NOT_FOUND == nvStatus) {
         return DEVICEKEY_NOT_FOUND;
@@ -134,7 +135,8 @@ int DeviceKey::read_key_from_nvstore(uint32_t *output, size_t &size)
 }
 
 // Calculate CMAC functions - wrapper for mbedtls start/update and finish
-int DeviceKey::calc_cmac(const unsigned char *input, size_t isize, uint32_t *ikey_buff, int ikey_size, unsigned char *output)
+int DeviceKey::calc_cmac(const unsigned char *input, size_t isize, uint32_t *ikey_buff, int ikey_size,
+                         unsigned char *output)
 {
     int ret;
     mbedtls_cipher_context_t ctx;
@@ -149,22 +151,22 @@ int DeviceKey::calc_cmac(const unsigned char *input, size_t isize, uint32_t *ike
     mbedtls_cipher_init(&ctx);
     ret = mbedtls_cipher_setup(&ctx, cipher_info);
     if (ret != 0) {
-       goto finish;
+        goto finish;
     }
 
-    ret = mbedtls_cipher_cmac_starts(&ctx, (unsigned char *)ikey_buff, ikey_size*8);
+    ret = mbedtls_cipher_cmac_starts(&ctx, (unsigned char *)ikey_buff, ikey_size * 8);
     if (ret != 0) {
-       goto finish;
+        goto finish;
     }
 
     ret = mbedtls_cipher_cmac_update(&ctx, input, isize);
     if (ret != 0) {
-       goto finish;
+        goto finish;
     }
 
     ret = mbedtls_cipher_cmac_finish(&ctx, output);
     if (ret != 0) {
-       goto finish;
+        goto finish;
     }
 
     return DEVICEKEY_SUCCESS;
@@ -178,7 +180,7 @@ int DeviceKey::get_derived_key(uint32_t *ikey_buff, size_t ikey_size, const unsi
                                size_t isalt_size, unsigned char *output, uint32_t ikey_type)
 {
     int ret;
-    unsigned char * double_size_salt = NULL;
+    unsigned char *double_size_salt = NULL;
 
     if (ikey_size == ikey_type || ikey_size > ikey_type) {
         ret = calc_cmac(isalt, isalt_size, ikey_buff, ikey_size, output);
@@ -198,7 +200,7 @@ int DeviceKey::get_derived_key(uint32_t *ikey_buff, size_t ikey_size, const unsi
         memcpy(double_size_salt, isalt, isalt_size);
         memcpy(double_size_salt + isalt_size, isalt, isalt_size);
 
-        ret = this->calc_cmac(double_size_salt, isalt_size*2, ikey_buff, ikey_size, output+ikey_size);
+        ret = this->calc_cmac(double_size_salt, isalt_size * 2, ikey_buff, ikey_size, output + ikey_size);
         if (DEVICEKEY_SUCCESS != ret) {
             goto finish;
         }
@@ -215,10 +217,9 @@ finish:
 }
 
 //This method is generating hard-coded 16 byte key for now!!!
-int DeviceKey::generate_key_by_trng(uint32_t *output, size_t &size)
+int DeviceKey::generate_key_by_trng(uint32_t *output, size_t& size)
 {
-    if (size < DEVICE_KEY_16BYTE)
-    {
+    if (size < DEVICE_KEY_16BYTE) {
         return DEVICEKEY_BUFFER_TO_SMALL;
     }
 

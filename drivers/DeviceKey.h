@@ -108,7 +108,7 @@ private:
      *             output: the actual size of the written data
      * @return 0 on success, negative error code on failure
      */
-    int read_key_from_nvstore(uint32_t *output, size_t &size);
+    int read_key_from_nvstore(uint32_t *output, size_t& size);
 
     /** Set a device key into the NVStore
      * @param input input buffer contain the key.
@@ -138,7 +138,7 @@ private:
      *             output: the actual written size to the buffer
      * @return 0 on success, negative error code on failure
      */
-    int generate_key_by_trng(uint32_t *output, size_t &size);
+    int generate_key_by_trng(uint32_t *output, size_t& size);
 };
 
 }

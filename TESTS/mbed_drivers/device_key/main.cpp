@@ -35,7 +35,7 @@ int inject_dummy_rot_key()
     memset(key, 0, DEVICE_KEY_16BYTE);
     memcpy(key, "1234567812345678", DEVICE_KEY_16BYTE);
     int size = DEVICE_KEY_16BYTE;
-    DeviceKey &devkey = DeviceKey::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
     return devkey.device_inject_root_of_trust(key, size);
 #else
     return DEVICEKEY_SUCCESS;
@@ -47,7 +47,7 @@ int inject_dummy_rot_key()
  */
 void device_inject_root_of_trust_wrong_size_test()
 {
-    DeviceKey &devkey = DeviceKey::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
     uint32_t key[DEVICE_KEY_32BYTE / sizeof(uint32_t)];
 
     memcpy(key, "12345678123456788765432187654321", DEVICE_KEY_32BYTE);
@@ -66,11 +66,11 @@ void device_inject_root_of_trust_wrong_size_test()
  */
 void device_inject_root_of_trust_16_byte_size_test()
 {
-    DeviceKey &devkey = DeviceKey::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
     uint32_t rkey[DEVICE_KEY_16BYTE / sizeof(uint32_t)];
     uint16_t actual_size;
     uint32_t key[DEVICE_KEY_16BYTE / sizeof(uint32_t)];
-    NVStore &nvstore = NVStore::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
 
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
@@ -92,11 +92,11 @@ void device_inject_root_of_trust_16_byte_size_test()
  */
 void device_inject_root_of_trust_32_byte_size_test()
 {
-    DeviceKey &devkey = DeviceKey::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
     uint32_t rkey[DEVICE_KEY_32BYTE / sizeof(uint32_t)];
     uint16_t actual_size;
     uint32_t key[DEVICE_KEY_32BYTE / sizeof(uint32_t)];
-    NVStore &nvstore = NVStore::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
 
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
@@ -118,9 +118,9 @@ void device_inject_root_of_trust_32_byte_size_test()
  */
 void device_inject_root_of_trust_only_once_test()
 {
-    DeviceKey &devkey = DeviceKey::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
     uint32_t key[DEVICE_KEY_32BYTE / sizeof(uint32_t)];
-    NVStore &nvstore = NVStore::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
 
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
@@ -148,8 +148,8 @@ void device_key_derived_key_consistency_16_byte_key_test()
     unsigned char empty_buffer[DEVICE_KEY_16BYTE];
     unsigned char salt[] = "Once upon a time, I worked for the circus and I lived in Omaha.";
     int key_type = DEVICE_KEY_16BYTE;
-    DeviceKey &devkey = DeviceKey::get_instance();
-    NVStore &nvstore = NVStore::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
 
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
@@ -182,8 +182,8 @@ void device_key_derived_key_consistency_32_byte_key_test()
     unsigned char empty_buffer[DEVICE_KEY_32BYTE];
     unsigned char salt[] = "The quick brown fox jumps over the lazy dog";
     int key_type = DEVICE_KEY_32BYTE;
-    DeviceKey &devkey = DeviceKey::get_instance();
-    NVStore &nvstore = NVStore::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
 
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
@@ -216,8 +216,8 @@ void device_key_derived_key_key_type_16_test()
     unsigned char expectedString[] = "Some String";
     int key_type = DEVICE_KEY_16BYTE;
     size_t salt_size = sizeof(salt);
-    DeviceKey &devkey = DeviceKey::get_instance();
-    NVStore &nvstore = NVStore::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
 
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
@@ -232,7 +232,7 @@ void device_key_derived_key_key_type_16_test()
     ret = devkey.device_key_derived_key(salt, salt_size, output, key_type);
     TEST_ASSERT_EQUAL_INT32(0, ret);
     //Test that we didn't override the buffer after the 16 byte size
-    TEST_ASSERT_EQUAL_UINT8_ARRAY(output + DEVICE_KEY_16BYTE + 1 , expectedString, sizeof(expectedString));
+    TEST_ASSERT_EQUAL_UINT8_ARRAY(output + DEVICE_KEY_16BYTE + 1, expectedString, sizeof(expectedString));
     //Test that we did override the buffer all 16 byte
     TEST_ASSERT(memcmp(output + DEVICE_KEY_16BYTE - sizeof(expectedString), expectedString, sizeof(expectedString)) != 0);
 }
@@ -247,8 +247,8 @@ void device_key_derived_key_key_type_32_test()
     int key_type = DEVICE_KEY_32BYTE;
     size_t salt_size = sizeof(salt);
     unsigned char expectedString[] = "Some String";
-    DeviceKey &devkey = DeviceKey::get_instance();
-    NVStore &nvstore = NVStore::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
 
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
@@ -276,8 +276,8 @@ void device_key_derived_key_wrong_key_type_test()
     unsigned char output[DEVICE_KEY_16BYTE];
     unsigned char salt[] = "The quick brown fox jumps over the lazy dog";
     size_t salt_size = sizeof(salt);
-    DeviceKey &devkey = DeviceKey::get_instance();
-    NVStore &nvstore = NVStore::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
 
     nvstore.init();
     int ret = nvstore.reset();
@@ -292,21 +292,22 @@ void device_key_derived_key_wrong_key_type_test()
 
 }
 
-utest::v1::status_t greentea_failure_handler(const Case *const source, const failure_t reason) {
+utest::v1::status_t greentea_failure_handler(const Case *const source, const failure_t reason)
+{
     greentea_case_failure_abort_handler(source, reason);
     return STATUS_CONTINUE;
 }
 
 Case cases[] = {
-    Case("Device Key - inject value wrong size"            , device_inject_root_of_trust_wrong_size_test        , greentea_failure_handler),
-    Case("Device Key - inject value 16 byte size"          , device_inject_root_of_trust_16_byte_size_test      , greentea_failure_handler),
-    Case("Device Key - inject value 32 byte size"          , device_inject_root_of_trust_32_byte_size_test      , greentea_failure_handler),
-    Case("Device Key - inject value only once"             , device_inject_root_of_trust_only_once_test         , greentea_failure_handler),
+    Case("Device Key - inject value wrong size", device_inject_root_of_trust_wrong_size_test, greentea_failure_handler),
+    Case("Device Key - inject value 16 byte size", device_inject_root_of_trust_16_byte_size_test, greentea_failure_handler),
+    Case("Device Key - inject value 32 byte size", device_inject_root_of_trust_32_byte_size_test, greentea_failure_handler),
+    Case("Device Key - inject value only once", device_inject_root_of_trust_only_once_test, greentea_failure_handler),
     Case("Device Key - derived key consistency 16 byte key", device_key_derived_key_consistency_16_byte_key_test, greentea_failure_handler),
     Case("Device Key - derived key consistency 32 byte key", device_key_derived_key_consistency_32_byte_key_test, greentea_failure_handler),
-    Case("Device Key - derived key key type 16"            , device_key_derived_key_key_type_16_test            , greentea_failure_handler),
-    Case("Device Key - derived key key type 32"            , device_key_derived_key_key_type_32_test            , greentea_failure_handler),
-    Case("Device Key - derived key wrong key type"         , device_key_derived_key_wrong_key_type_test         , greentea_failure_handler)
+    Case("Device Key - derived key key type 16", device_key_derived_key_key_type_16_test, greentea_failure_handler),
+    Case("Device Key - derived key key type 32", device_key_derived_key_key_type_32_test, greentea_failure_handler),
+    Case("Device Key - derived key wrong key type", device_key_derived_key_wrong_key_type_test, greentea_failure_handler)
 };
 
 utest::v1::status_t greentea_test_setup(const size_t number_of_cases)
