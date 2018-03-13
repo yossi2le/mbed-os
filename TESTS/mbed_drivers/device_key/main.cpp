@@ -297,15 +297,16 @@ utest::v1::status_t greentea_failure_handler(const Case *const source, const fai
     return STATUS_CONTINUE;
 }
 
-Case cases[] = { Case("Device Key - inject value wrong size"            , device_inject_root_of_trust_wrong_size_test        , greentea_failure_handler),
-                 Case("Device Key - inject value 16 byte size"          , device_inject_root_of_trust_16_byte_size_test      , greentea_failure_handler),
-                 Case("Device Key - inject value 32 byte size"          , device_inject_root_of_trust_32_byte_size_test      , greentea_failure_handler),
-                 Case("Device Key - inject value only once"             , device_inject_root_of_trust_only_once_test         , greentea_failure_handler),
-                 Case("Device Key - derived key consistency 16 byte key", device_key_derived_key_consistency_16_byte_key_test, greentea_failure_handler),
-                 Case("Device Key - derived key consistency 32 byte key", device_key_derived_key_consistency_32_byte_key_test, greentea_failure_handler),
-                 Case("Device Key - derived key key type 16"            , device_key_derived_key_key_type_16_test            , greentea_failure_handler),
-                 Case("Device Key - derived key key type 32"            , device_key_derived_key_key_type_32_test            , greentea_failure_handler),
-                 Case("Device Key - derived key wrong key type"         , device_key_derived_key_wrong_key_type_test         , greentea_failure_handler)
+Case cases[] = {
+    Case("Device Key - inject value wrong size"            , device_inject_root_of_trust_wrong_size_test        , greentea_failure_handler),
+    Case("Device Key - inject value 16 byte size"          , device_inject_root_of_trust_16_byte_size_test      , greentea_failure_handler),
+    Case("Device Key - inject value 32 byte size"          , device_inject_root_of_trust_32_byte_size_test      , greentea_failure_handler),
+    Case("Device Key - inject value only once"             , device_inject_root_of_trust_only_once_test         , greentea_failure_handler),
+    Case("Device Key - derived key consistency 16 byte key", device_key_derived_key_consistency_16_byte_key_test, greentea_failure_handler),
+    Case("Device Key - derived key consistency 32 byte key", device_key_derived_key_consistency_32_byte_key_test, greentea_failure_handler),
+    Case("Device Key - derived key key type 16"            , device_key_derived_key_key_type_16_test            , greentea_failure_handler),
+    Case("Device Key - derived key key type 32"            , device_key_derived_key_key_type_32_test            , greentea_failure_handler),
+    Case("Device Key - derived key wrong key type"         , device_key_derived_key_wrong_key_type_test         , greentea_failure_handler)
 };
 
 utest::v1::status_t greentea_test_setup(const size_t number_of_cases)

@@ -43,7 +43,7 @@ int DeviceKey::device_key_derived_key(const unsigned char *salt, size_t isalt_si
     uint32_t key_buff[DEVICE_KEY_32BYTE / sizeof(uint32_t)];
     size_t actual_size = DEVICE_KEY_32BYTE;
 
-    if (DEVICE_KEY_16BYTE != ikey_type && DEVICE_KEY_32BYTE != ikey_type){
+    if (DEVICE_KEY_16BYTE != ikey_type && DEVICE_KEY_32BYTE != ikey_type) {
         return DEVICEKEY_INVALID_KEY_TYPE;
     }
 
@@ -53,7 +53,7 @@ int DeviceKey::device_key_derived_key(const unsigned char *salt, size_t isalt_si
         return ret;
     }
 
-    if(DEVICE_KEY_16BYTE != actual_size && DEVICE_KEY_32BYTE != actual_size) {
+    if (DEVICE_KEY_16BYTE != actual_size && DEVICE_KEY_32BYTE != actual_size) {
         return DEVICEKEY_READ_FAILED;
     }
 
@@ -86,7 +86,7 @@ int DeviceKey::device_inject_root_of_trust(uint32_t *value, size_t isize)
 
 int DeviceKey::write_key_to_nvstore(uint32_t *input, size_t isize)
 {
-    if(DEVICE_KEY_16BYTE != isize && DEVICE_KEY_32BYTE != isize) {
+    if (DEVICE_KEY_16BYTE != isize && DEVICE_KEY_32BYTE != isize) {
         return DEVICEKEY_INVALID_KEY_SIZE;
     }
 
