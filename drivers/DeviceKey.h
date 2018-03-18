@@ -39,6 +39,7 @@ enum DeviceKeyStatus {
     DEVICEKEY_BUFFER_TO_SMALL             = -9,
     DEVICEKEY_NO_KEY_INJECTED             = -10,
     DEVICEKEY_INVALID_PARAM               = -11,
+    DEVICEKEY_TRNG_ERROR                  = -12,
 };
 
 /** Use this singleton if you need to derive a new key from the device root of trust.
