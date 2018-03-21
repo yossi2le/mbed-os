@@ -21,7 +21,7 @@
 #include "nvstore.h"
 
 //This constant is temporary because NVStroe do not support keys enum yet.
-//when the feature become available in NVStore this constant should be remove
+//When the feature become available in NVStore this constant should be remove
 extern const int devkey_nvstore_rot_key;
 
 using namespace utest::v1;
@@ -33,16 +33,11 @@ int inject_dummy_rot_key()
 {
 #if !defined(DEVICE_TRNG)
     uint32_t key[DEVICE_KEY_16BYTE / sizeof(uint32_t)];
+
+    memset(key, 0, DEVICE_KEY_16BYTE);
+    memcpy(key, "1234567812345678", DEVICE_KEY_16BYTE);
     int size = DEVICE_KEY_16BYTE;
-    time_t t;
-
-    srand((unsigned) time(&t));
-    memset(key, 0, size);
-    for (int i = 0; i < size; i++) {
-        ((uint8_t *)key)[i] = rand() % 0xFF;
-    }
-
-    DeviceKey& devkey = DeviceKey::get_instance();
+    DeviceKey &devkey = DeviceKey::get_instance();
     return devkey.device_inject_root_of_trust(key, size);
 #else
     return DEVICEKEY_SUCCESS;
