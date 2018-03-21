@@ -24,7 +24,7 @@
 #error [NOT_SUPPORTED] MBEDTLS_CMAC_C needs to be enabled for this driver
 #else
 
-//This constant is temporary because NVStroe do not support keys enum yet.
+//This constant is temporary because NVStore do not support keys enum yet.
 //When the feature become available in NVStore this constant should be remove
 extern const int devkey_nvstore_rot_key = 4;
 
@@ -205,19 +205,18 @@ int DeviceKey::get_derived_key(uint32_t *ikey_buff, size_t ikey_size, const unsi
         memcpy(double_size_salt + isalt_size, isalt, isalt_size);
 
         ret = this->calc_cmac(double_size_salt, isalt_size * 2, ikey_buff, ikey_size, output + 16);
-        if (DEVICEKEY_SUCCESS != ret) {
-            goto finish;
-        }
     }
-
-    return DEVICEKEY_SUCCESS;
 
 finish:
     if (double_size_salt != NULL) {
         delete[] double_size_salt;
     }
 
-    return DEVICEKEY_ERR_CMAC_GENERIC_FAILURE;
+    if (DEVICEKEY_SUCCESS != ret) {
+        return DEVICEKEY_ERR_CMAC_GENERIC_FAILURE;
+    }
+
+    return DEVICEKEY_SUCCESS;
 }
 
 int DeviceKey::generate_key_by_trng(uint32_t *output, size_t& size)
@@ -239,7 +238,7 @@ int DeviceKey::generate_key_by_trng(uint32_t *output, size_t& size)
     trng_init(&trng_obj);
 
     int ret = trng_get_bytes(&trng_obj, (unsigned char *)output, in_size, &size);
-    if ( DEVICEKEY_SUCCESS != ret || in_size != size) {
+    if (DEVICEKEY_SUCCESS != ret || in_size != size) {
         return DEVICEKEY_TRNG_ERROR;
     }
 

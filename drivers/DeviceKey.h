@@ -141,6 +141,7 @@ private:
      */
     int generate_key_by_trng(uint32_t *output, size_t& size);
 };
+/** @}*/
 
 }
 
