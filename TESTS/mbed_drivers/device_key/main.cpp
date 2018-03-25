@@ -20,11 +20,22 @@
 #include "greentea-client/test_env.h"
 #include "nvstore.h"
 
-//This constant is temporary because NVStroe do not support keys enum yet.
-//When the feature become available in NVStore this constant should be remove
-extern const int devkey_nvstore_rot_key;
-
 using namespace utest::v1;
+
+#define MSG_VALUE_DUMMY "0"
+#define MSG_VALUE_LEN 32
+#define MSG_KEY_LEN 32
+
+#define MSG_KEY_DEVICE_READY "ready"
+#define MSG_KEY_DEVICE_FINISH "finish"
+#define MSG_KEY_DEVICE_TEST_STEP1 "check_consistency_step1"
+#define MSG_KEY_DEVICE_TEST_STEP2 "check_consistency_step2"
+#define MSG_KEY_DEVICE_TEST_STEP3 "check_consistency_step3"
+#define MSG_KEY_DEVICE_TEST_STEP4 "check_consistency_step4"
+#define MSG_KEY_DEVICE_TEST_SUITE_ENDED "Test suite ended"
+
+void device_key_derived_key_consistency_16_byte_key_reset_test(char *key);
+void device_key_derived_key_consistency_32_byte_key_reset_test(char *key);
 
 /*
  * Injection of a dummy key when there is no TRNG
@@ -37,11 +48,156 @@ int inject_dummy_rot_key()
     memset(key, 0, DEVICE_KEY_16BYTE);
     memcpy(key, "1234567812345678", DEVICE_KEY_16BYTE);
     int size = DEVICE_KEY_16BYTE;
-    DeviceKey &devkey = DeviceKey::get_instance();
+    DeviceKey& devkey = DeviceKey::get_instance();
     return devkey.device_inject_root_of_trust(key, size);
 #else
     return DEVICEKEY_SUCCESS;
 #endif
+}
+
+void device_key_derived_key_reset_test()
+{
+    greentea_send_kv(MSG_KEY_DEVICE_READY, MSG_VALUE_DUMMY);
+
+    static char key[MSG_KEY_LEN + 1] = { };
+    static char value[MSG_VALUE_LEN + 1] = { };
+    memset(key, 0, MSG_KEY_LEN + 1);
+    memset(value, 0, MSG_VALUE_LEN + 1);
+
+    greentea_parse_kv(key, value, MSG_KEY_LEN, MSG_VALUE_LEN);
+
+    if (strcmp(key, MSG_KEY_DEVICE_TEST_STEP1) == 0 || strcmp(key, MSG_KEY_DEVICE_TEST_STEP2) == 0) {
+        device_key_derived_key_consistency_16_byte_key_reset_test(key);
+        return device_key_derived_key_reset_test();
+    }
+
+    if (strcmp(key, MSG_KEY_DEVICE_TEST_STEP3) == 0 || strcmp(key, MSG_KEY_DEVICE_TEST_STEP4) == 0) {
+        return device_key_derived_key_consistency_32_byte_key_reset_test(key);
+    }
+
+    TEST_ASSERT_MESSAGE(false, key); //Indicates error!!!
+}
+
+/*
+ * Test the consistency of derived 16 byte key result after device reset.
+ */
+void device_key_derived_key_consistency_16_byte_key_reset_test(char *key)
+{
+    unsigned char output1[DEVICE_KEY_16BYTE];
+    unsigned char output2[DEVICE_KEY_16BYTE];
+    unsigned char empty_buffer[DEVICE_KEY_16BYTE];
+    unsigned char salt[] = "Once upon a time, I worked for the circus and I lived in Omaha.";
+    int key_type = DEVICE_KEY_16BYTE;
+    uint16_t actual_size = 0;
+    DeviceKey& devkey = DeviceKey::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
+    size_t salt_size = sizeof(salt);
+
+    if (strcmp(key, MSG_KEY_DEVICE_TEST_STEP1) == 0) {
+
+        //Third step: Clear NVStore, create an ROT key, derive a 16 byte
+        //key and store it in NVStore at index 15, At the end reset the device
+        int ret = nvstore.reset();
+        TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
+
+        ret = inject_dummy_rot_key();
+        TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
+
+        memset(output1, 0, sizeof(output1));
+        ret = devkey.device_key_derived_key(salt, salt_size, output1, key_type);
+        TEST_ASSERT_EQUAL_INT32(0, ret);
+        bool is_empty = !memcmp(empty_buffer, output1, sizeof(output1));
+        TEST_ASSERT_FALSE(is_empty);
+
+        ret = nvstore.set(15, DEVICE_KEY_16BYTE, output1);
+        TEST_ASSERT_EQUAL_INT32(0, ret);
+
+        system_reset();
+        TEST_ASSERT_MESSAGE(false, "system_reset() did not reset the device as expected.");
+    } else if (strcmp(key, MSG_KEY_DEVICE_TEST_STEP2) == 0) {
+
+        //Second step: Read from NVStore at index 15 there should be a derived key there.
+        //Now try to derive a key for 100 times and check it is the same key like before the reset.
+        //At the end clear NVStore.
+        int ret = nvstore.get(15, DEVICE_KEY_16BYTE, output1, actual_size);
+        TEST_ASSERT_FALSE(NVSTORE_SUCCESS != ret)
+        TEST_ASSERT_EQUAL_INT(DEVICE_KEY_16BYTE, actual_size);
+
+        for (int i = 0; i < 100; i++) {
+            memset(output2, 0, sizeof(output2));
+            ret = devkey.device_key_derived_key(salt, salt_size, output2, key_type);
+            TEST_ASSERT_EQUAL_INT32(0, ret);
+            TEST_ASSERT_EQUAL_UINT8_ARRAY(output1, output2, DEVICE_KEY_16BYTE);
+        }
+
+        ret = nvstore.reset();
+        TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
+
+        greentea_send_kv(MSG_KEY_DEVICE_FINISH, MSG_VALUE_DUMMY);
+    } else {
+        TEST_ASSERT_MESSAGE(false, "Unknown test step received");
+    }
+}
+
+/*
+ * Test the consistency of derived 32 byte key result after device reset.
+ */
+void device_key_derived_key_consistency_32_byte_key_reset_test(char *key)
+{
+    unsigned char output1[DEVICE_KEY_32BYTE];
+    unsigned char output2[DEVICE_KEY_32BYTE];
+    unsigned char empty_buffer[DEVICE_KEY_32BYTE];
+    unsigned char salt[] = "The quick brown fox jumps over the lazy dog";
+    int key_type = DEVICE_KEY_32BYTE;
+    uint16_t actual_size = 0;
+    DeviceKey& devkey = DeviceKey::get_instance();
+    NVStore& nvstore = NVStore::get_instance();
+    size_t salt_size = sizeof(salt);
+
+    if (strcmp(key, MSG_KEY_DEVICE_TEST_STEP3) == 0) {
+
+        //Third step: Clear NVStore, create an ROT key, derive a 32 byte
+        //key and store it in NVStore at index 15, At the end reset the device
+        int ret = nvstore.reset();
+        TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
+
+        ret = inject_dummy_rot_key();
+        TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
+
+        memset(output1, 0, sizeof(output1));
+        ret = devkey.device_key_derived_key(salt, salt_size, output1, key_type);
+        TEST_ASSERT_EQUAL_INT32(0, ret);
+        bool is_empty = !memcmp(empty_buffer, output1, sizeof(output1));
+        TEST_ASSERT_FALSE(is_empty);
+
+        ret = nvstore.set(15, DEVICE_KEY_32BYTE, output1);
+        TEST_ASSERT_EQUAL_INT32(0, ret);
+
+        system_reset();
+        TEST_ASSERT_MESSAGE(false, "system_reset() did not reset the device as expected.");
+    } else if (strcmp(key, MSG_KEY_DEVICE_TEST_STEP4) == 0) {
+
+        //Fourth step: Read from NVStore at index 15 there should be a derived key there.
+        //Now try to derive a key for 100 times and check it is the same key like before the reset.
+        //At the end clear NVStore.
+        int ret = nvstore.get(15, DEVICE_KEY_32BYTE, output1, actual_size);
+        TEST_ASSERT_FALSE(NVSTORE_SUCCESS != ret)
+        TEST_ASSERT_EQUAL_INT(DEVICE_KEY_32BYTE, actual_size);
+
+        for (int i = 0; i < 100; i++) {
+            memset(output2, 0, sizeof(output2));
+            ret = devkey.device_key_derived_key(salt, salt_size, output2, key_type);
+            TEST_ASSERT_EQUAL_INT32(0, ret);
+            TEST_ASSERT_EQUAL_UINT8_ARRAY(output1, output2, DEVICE_KEY_32BYTE);
+        }
+
+        ret = nvstore.reset();
+        TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
+
+        greentea_send_kv(MSG_KEY_DEVICE_FINISH, MSG_VALUE_DUMMY);
+    } else {
+        TEST_ASSERT_MESSAGE(false, "Unknown test step received");
+    }
 }
 
 /*
@@ -83,7 +239,7 @@ void device_inject_root_of_trust_16_byte_size_test()
 
     //Read the key from NVStore.
     memset(rkey, 0, sizeof(rkey));
-    ret = nvstore.get(devkey_nvstore_rot_key, DEVICE_KEY_16BYTE, rkey, actual_size);
+    ret = nvstore.get(NVSTORE_DEVICEKEY_KEY, DEVICE_KEY_16BYTE, rkey, actual_size);
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
     TEST_ASSERT_EQUAL_INT(DEVICE_KEY_16BYTE, actual_size);
     TEST_ASSERT_EQUAL_INT32_ARRAY(key, rkey, actual_size / sizeof(uint32_t));
@@ -109,7 +265,7 @@ void device_inject_root_of_trust_32_byte_size_test()
 
     //Read the key from NVStore.
     memset(rkey, 0, sizeof(rkey));
-    ret = nvstore.get(devkey_nvstore_rot_key, DEVICE_KEY_32BYTE, rkey, actual_size);
+    ret = nvstore.get(NVSTORE_DEVICEKEY_KEY, DEVICE_KEY_32BYTE, rkey, actual_size);
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
     TEST_ASSERT_EQUAL_INT(DEVICE_KEY_32BYTE, actual_size);
     TEST_ASSERT_EQUAL_INT32_ARRAY(key, rkey, actual_size / sizeof(uint32_t));
@@ -301,6 +457,7 @@ utest::v1::status_t greentea_failure_handler(const Case *const source, const fai
 }
 
 Case cases[] = {
+    Case("Device Key - derived key reset",                   device_key_derived_key_reset_test                                            ),
     Case("Device Key - inject value wrong size",             device_inject_root_of_trust_wrong_size_test,         greentea_failure_handler),
     Case("Device Key - inject value 16 byte size",           device_inject_root_of_trust_16_byte_size_test,       greentea_failure_handler),
     Case("Device Key - inject value 32 byte size",           device_inject_root_of_trust_32_byte_size_test,       greentea_failure_handler),
@@ -314,7 +471,7 @@ Case cases[] = {
 
 utest::v1::status_t greentea_test_setup(const size_t number_of_cases)
 {
-    GREENTEA_SETUP(4, "default_auto");
+    GREENTEA_SETUP(14, "devicekey_reset");
     return greentea_test_setup_handler(number_of_cases);
 }
 
@@ -322,6 +479,9 @@ Specification specification(greentea_test_setup, cases, greentea_test_teardown_h
 
 int main()
 {
-    return Harness::run(specification);
+    bool ret = Harness::run(specification);
+    greentea_send_kv(MSG_KEY_DEVICE_TEST_SUITE_ENDED, MSG_VALUE_DUMMY);
+
+    return ret;
 }
 

@@ -24,10 +24,6 @@
 #error [NOT_SUPPORTED] MBEDTLS_CMAC_C needs to be enabled for this driver
 #else
 
-//This constant is temporary because NVStore do not support keys enum yet.
-//When the feature become available in NVStore this constant should be remove
-extern const int devkey_nvstore_rot_key = 4;
-
 namespace mbed {
 
 DeviceKey::DeviceKey()
@@ -100,7 +96,7 @@ int DeviceKey::write_key_to_nvstore(uint32_t *input, size_t isize)
     }
 
     NVStore& nvstore = NVStore::get_instance();
-    ret = nvstore.set(devkey_nvstore_rot_key, (uint16_t)isize, input);
+    ret = nvstore.set(NVSTORE_DEVICEKEY_KEY, (uint16_t)isize, input);
     if (NVSTORE_WRITE_ERROR == ret || NVSTORE_BUFF_TOO_SMALL == ret) {
         return DEVICEKEY_SAVE_FAILED;
     }
@@ -121,7 +117,7 @@ int DeviceKey::read_key_from_nvstore(uint32_t *output, size_t& size)
     uint16_t in_size = size;
     uint16_t out_size = 0;
     NVStore& nvstore = NVStore::get_instance();
-    int nvStatus = nvstore.get(devkey_nvstore_rot_key, in_size, output, out_size);
+    int nvStatus = nvstore.get(NVSTORE_DEVICEKEY_KEY, in_size, output, out_size);
     if (NVSTORE_NOT_FOUND == nvStatus) {
         return DEVICEKEY_NOT_FOUND;
     }
