@@ -274,7 +274,7 @@ void device_inject_root_of_trust_32_byte_size_test()
 /*
  * Test that a key can be written to persistent storage only once.
  */
-void device_inject_root_of_trust_only_once_test()
+void device_inject_root_of_trust_several_times_test()
 {
     DeviceKey& devkey = DeviceKey::get_instance();
     uint32_t key[DEVICE_KEY_32BYTE / sizeof(uint32_t)];
@@ -456,12 +456,13 @@ utest::v1::status_t greentea_failure_handler(const Case *const source, const fai
     return STATUS_CONTINUE;
 }
 
+//Currently there can be only one test that contains reset and it has to be the first test!
 Case cases[] = {
-    Case("Device Key - derived key reset",                   device_key_derived_key_reset_test                                            ),
+    Case("Device Key - derived key reset",                   device_key_derived_key_reset_test,                   greentea_failure_handler),
     Case("Device Key - inject value wrong size",             device_inject_root_of_trust_wrong_size_test,         greentea_failure_handler),
     Case("Device Key - inject value 16 byte size",           device_inject_root_of_trust_16_byte_size_test,       greentea_failure_handler),
     Case("Device Key - inject value 32 byte size",           device_inject_root_of_trust_32_byte_size_test,       greentea_failure_handler),
-    Case("Device Key - inject value only once",              device_inject_root_of_trust_only_once_test,          greentea_failure_handler),
+    Case("Device Key - inject value several times",          device_inject_root_of_trust_several_times_test,      greentea_failure_handler),
     Case("Device Key - derived key consistency 16 byte key", device_key_derived_key_consistency_16_byte_key_test, greentea_failure_handler),
     Case("Device Key - derived key consistency 32 byte key", device_key_derived_key_consistency_32_byte_key_test, greentea_failure_handler),
     Case("Device Key - derived key key type 16",             device_key_derived_key_key_type_16_test,             greentea_failure_handler),
