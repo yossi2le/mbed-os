@@ -24,22 +24,9 @@
 #include "mbed.h"
 #include "platform/PlatformMutex.h"
 
-/** Access an SD Card using SPI
+/** SDBlockDevice class
  *
- * @code
- * #include "mbed.h"
- * #include "SDBlockDevice.h"
- *
- * SDBlockDevice sd(p5, p6, p7, p12); // mosi, miso, sclk, cs
- * uint8_t block[512] = "Hello World!\n";
- *
- * int main() {
- *     sd.init();
- *     sd.write(block, 0, 512);
- *     sd.read(block, 0, 512);
- *     printf("%s", block);
- *     sd.deinit();
- * }
+ * Access an SD Card using SPI
  */
 class SDBlockDevice : public BlockDevice {
 public:
@@ -114,13 +101,13 @@ public:
 
     /** Enable or disable debugging
      *
-     *  @param          State of debugging
+     *  @param dbg        State of debugging
      */
     virtual void debug(bool dbg);
 
     /** Set the transfer frequency
      *
-     *  @param         Transfer frequency
+     *  @param freq     Transfer frequency
      *  @note Max frequency supported is 25MHZ
      */
     virtual int frequency(uint64_t freq);
