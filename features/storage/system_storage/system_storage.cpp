@@ -1,7 +1,7 @@
-#include "SystemStorage.h"
+#include "system_storage.h"
 
 namespace mbed {
-namespace SystemStorage{
+namespace system_storage{
 
 MBED_WEAK BlockDevice* get_default_blockdevice()
 {

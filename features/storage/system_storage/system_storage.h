@@ -15,7 +15,7 @@
 #endif
 
 namespace mbed {
-namespace SystemStorage {
+namespace system_storage {
 
 BlockDevice *get_default_blockdevice();
 

@@ -46,7 +46,7 @@
 #include "unity.h"
 #include "utest.h"
 
-#include "SystemStorage.h"
+#include "system_storage.h"
 #include <stdlib.h>
 
 #if !(COMPONENT_SPIF || COMPONENT_SD)
@@ -72,7 +72,7 @@ const struct {
 
 void test_read_write() {
 
-    BlockDevice * bd = SystemStorage::get_default_blockdevice();
+    BlockDevice * bd = system_storage::get_default_blockdevice();
     TEST_ASSERT_NOT_EQUAL(NULL, bd);
 
     int err = bd->init();

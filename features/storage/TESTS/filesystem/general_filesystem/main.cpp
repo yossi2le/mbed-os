@@ -16,7 +16,7 @@
 #include "greentea-client/test_env.h"
 #include "unity/unity.h"
 #include "utest/utest.h"
-#include "SystemStorage.h"
+#include "system_storage.h"
 #if COMPONENT_SPIF
 #include "SPIFBlockDevice.h"
 #include "LittleFileSystem.h"
@@ -36,8 +36,8 @@ static const size_t test_files        = 2;
 
 FILE *fd[test_files];
 
-BlockDevice *bd = mbed::SystemStorage::get_default_blockdevice();
-FileSystem  *fs = mbed::SystemStorage::get_default_filesystem();
+BlockDevice *bd = mbed::system_storage::get_default_blockdevice();
+FileSystem  *fs = mbed::system_storage::get_default_filesystem();
 
 /*----------------help functions------------------*/
 
@@ -105,7 +105,7 @@ static void FS_fopen_invalid_mode()
     deinit();
 }
 
-//fopen with valid flow
+//fopen with valid flowSystemStorage
 static void FS_fopen_supported_wb_mode()
 {
     init();
