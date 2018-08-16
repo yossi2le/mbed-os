@@ -1,5 +1,17 @@
 #include "SystemStorage.h"
 
+#if COMPONENT_SPIF
+#include "SPIFBlockDevice.h"
+#endif
+
+#if COMPONENT_DATAFLASH
+#include "DataFlashBlockDevice.h"
+#endif
+
+#if COMPONENT_SD
+#include "SDBlockDevice.h"
+#endif
+
 namespace mbed {
 
 MBED_WEAK BlockDevice* get_default_blockdevice()

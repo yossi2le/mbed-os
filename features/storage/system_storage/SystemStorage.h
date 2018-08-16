@@ -6,18 +6,6 @@
 #include "BlockDevice.h"
 #include "FileSystem.h"
 
-#if COMPONENT_SPIF
-#include "SPIFBlockDevice.h"
-#endif
-
-#if COMPONENT_DATAFLASH
-#include "DataFlashBlockDevice.h"
-#endif
-
-#if COMPONENT_SD
-#include "SDBlockDevice.h"
-#endif
-
 #include "FATFileSystem.h"
 #include "LittleFileSystem.h"
 

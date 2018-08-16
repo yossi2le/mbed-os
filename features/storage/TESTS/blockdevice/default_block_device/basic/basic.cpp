@@ -45,7 +45,7 @@
 #include "greentea-client/test_env.h"
 #include "unity.h"
 #include "utest.h"
-
+#include "SDBlockDevice.h"
 #include <stdlib.h>
 
 #if !(COMPONENT_SPIF || COMPONENT_SD || COMPONENT_DATAFLASH)
