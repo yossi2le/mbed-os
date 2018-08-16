@@ -8,7 +8,11 @@
 
 using namespace utest::v1;
 
-#define TEST_PINS PTB22, PTB23, PTB21, PTB20
+#define TEST_PINS MBED_CONF_DATAFLASH_SPI_MOSI, \
+                  MBED_CONF_DATAFLASH_SPI_MISO, \
+                  MBED_CONF_DATAFLASH_SPI_CLK, \
+                  MBED_CONF_DATAFLASH_SPI_CS
+
 #define TEST_FREQ 40000000
 
 #define TEST_BLOCK_COUNT 10

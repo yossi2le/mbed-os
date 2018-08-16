@@ -1,7 +1,6 @@
-#include "system_storage.h"
+#include "SystemStorage.h"
 
 namespace mbed {
-namespace system_storage{
 
 MBED_WEAK BlockDevice* get_default_blockdevice()
 {
@@ -16,6 +15,17 @@ MBED_WEAK BlockDevice* get_default_blockdevice()
         );
 
     return &default_bd;
+
+#elif COMPONENT_DATAFLASH
+
+    static DataFlashBlockDevice default_bd(
+        MBED_CONF_DATAFLASH_SPI_MOSI,
+        MBED_CONF_DATAFLASH_SPI_MISO,
+        MBED_CONF_DATAFLASH_SPI_CLK,
+        MBED_CONF_DATAFLASH_SPI_CS
+        );
+
+        return &default_bd;
 
 #elif COMPONENT_SD
 
@@ -38,7 +48,7 @@ MBED_WEAK BlockDevice* get_default_blockdevice()
 
 MBED_WEAK FileSystem * get_default_filesystem()
 {
-#if COMPONENT_SPIF
+#if COMPONENT_SPIF || COMPONENT_DATAFLASH
 
     static LittleFileSystem default_fs("defult_fs", get_default_blockdevice());
 
@@ -58,5 +68,4 @@ MBED_WEAK FileSystem * get_default_filesystem()
 
 }
 
-}
 }

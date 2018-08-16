@@ -46,10 +46,9 @@
 #include "unity.h"
 #include "utest.h"
 
-#include "system_storage.h"
 #include <stdlib.h>
 
-#if !(COMPONENT_SPIF || COMPONENT_SD)
+#if !(COMPONENT_SPIF || COMPONENT_SD || COMPONENT_DATAFLASH)
 #error [NOT_SUPPORTED] default block device is enabled only if components sd and spif enabled
 #endif
 
@@ -72,13 +71,13 @@ const struct {
 
 void test_read_write() {
 
-    BlockDevice * bd = system_storage::get_default_blockdevice();
+    BlockDevice * bd = get_default_blockdevice();
     TEST_ASSERT_NOT_EQUAL(NULL, bd);
 
     int err = bd->init();
     TEST_ASSERT_EQUAL(0, err);
 
-#ifdef COMPONENT_SD
+#if COMPONENT_SD && (!COMPONENT_SPIF && !COMPONENT_DATAFLASH)
     err = ((SDBlockDevice*)bd)->frequency(8000000);
     TEST_ASSERT_EQUAL(0, err);
 #endif
