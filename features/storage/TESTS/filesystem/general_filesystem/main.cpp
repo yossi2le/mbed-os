@@ -16,7 +16,8 @@
 #include "greentea-client/test_env.h"
 #include "unity/unity.h"
 #include "utest/utest.h"
-#include "SystemStorage.h"
+#include "BlockDevice.h"
+#include "FileSystem.h"
 #if COMPONENT_SPIF
 #include "SPIFBlockDevice.h"
 #include "LittleFileSystem.h"
@@ -36,8 +37,8 @@ static const size_t test_files        = 2;
 
 FILE *fd[test_files];
 
-BlockDevice *bd = mbed::get_default_blockdevice();
-FileSystem  *fs = mbed::get_default_filesystem();
+BlockDevice *bd = BlockDevice::get_default_instance();
+FileSystem  *fs = FileSystem::get_default_instance();
 
 /*----------------help functions------------------*/
 

@@ -41,11 +41,14 @@
 
 /** @file main.cpp Basic SD Driver Test
  */
+#include "BlockDevice.h"
 #include "mbed.h"
 #include "greentea-client/test_env.h"
 #include "unity.h"
 #include "utest.h"
+#if COMPONENT_SD
 #include "SDBlockDevice.h"
+#endif
 #include <stdlib.h>
 
 #if !(COMPONENT_SPIF || COMPONENT_SD || COMPONENT_DATAFLASH)
@@ -71,7 +74,7 @@ const struct {
 
 void test_read_write() {
 
-    BlockDevice * bd = get_default_blockdevice();
+    BlockDevice * bd = BlockDevice::get_default_instance();
     TEST_ASSERT_NOT_EQUAL(NULL, bd);
 
     int err = bd->init();

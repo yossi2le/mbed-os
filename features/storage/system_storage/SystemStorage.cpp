@@ -1,4 +1,7 @@
-#include "SystemStorage.h"
+#include "BlockDevice.h"
+#include "FileSystem.h"
+#include "FATFileSystem.h"
+#include "LittleFileSystem.h"
 
 #if COMPONENT_SPIF
 #include "SPIFBlockDevice.h"
@@ -14,7 +17,7 @@
 
 namespace mbed {
 
-MBED_WEAK BlockDevice* get_default_blockdevice()
+MBED_WEAK BlockDevice* BlockDevice::get_default_instance()
 {
 #if COMPONENT_SPIF
 
@@ -58,17 +61,17 @@ MBED_WEAK BlockDevice* get_default_blockdevice()
 
 }
 
-MBED_WEAK FileSystem * get_default_filesystem()
+MBED_WEAK FileSystem * FileSystem::get_default_instance()
 {
 #if COMPONENT_SPIF || COMPONENT_DATAFLASH
 
-    static LittleFileSystem default_fs("sd", get_default_blockdevice());
+    static LittleFileSystem default_fs("sd", BlockDevice::get_default_instance());
 
     return &default_fs;
 
 #elif COMPONENT_SD
 
-    static FATFileSystem default_fs("sd", get_default_blockdevice());
+    static FATFileSystem default_fs("sd", BlockDevice::get_default_instance());
 
     return &default_fs;
 
