@@ -77,7 +77,7 @@ static void FS_fopen_empty_path_r_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "", "rb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "", "rb")) != NULL);
     TEST_ASSERT_EQUAL(1, res);
 
     deinit();
@@ -88,7 +88,7 @@ static void FS_fopen_empty_path_w_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "", "wb")) != NULL);
     TEST_ASSERT_EQUAL(1, res);
 
     deinit();
@@ -99,7 +99,7 @@ static void FS_fopen_invalid_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "Invalid_mode", "")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "Invalid_mode", "")) != NULL);
     TEST_ASSERT_EQUAL(1, res);
 
     deinit();
@@ -110,7 +110,7 @@ static void FS_fopen_supported_wb_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     deinit();
@@ -121,7 +121,7 @@ static void FS_fopen_supported_a_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "a")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "a")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     deinit();
@@ -132,7 +132,7 @@ static void FS_fopen_supported_r_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "r")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "r")) != NULL);
     TEST_ASSERT_EQUAL(1, res);
 
     deinit();
@@ -143,7 +143,7 @@ static void FS_fopen_supported_a_update_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "a+")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "a+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     deinit();
@@ -154,7 +154,7 @@ static void FS_fopen_supported_r_update_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "r+")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "r+")) != NULL);
     TEST_ASSERT_EQUAL(1, res);
 
     deinit();
@@ -165,7 +165,7 @@ static void FS_fopen_supported_w_update_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w+")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     deinit();
@@ -179,7 +179,7 @@ static void FS_fopen_read_update_create()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), small_buf_size, fd[0]);
@@ -188,7 +188,7 @@ static void FS_fopen_read_update_create()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), small_buf_size, fd[0]);
@@ -209,7 +209,7 @@ static void FS_fopen_write_update_create()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), small_buf_size, fd[0]);
@@ -218,7 +218,7 @@ static void FS_fopen_write_update_create()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "w+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "w+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), small_buf_size, fd[0]);
@@ -236,7 +236,7 @@ static void FS_fclose_valid_flow()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
@@ -254,7 +254,7 @@ static void FS_fwrite_nmemb_zero()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(buffer, sizeof(char), 0, fd[0]);
@@ -274,7 +274,7 @@ static void FS_fwrite_valid_flow()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), small_buf_size, fd[0]);
@@ -283,7 +283,7 @@ static void FS_fwrite_valid_flow()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), small_buf_size, fd[0]);
@@ -303,13 +303,13 @@ static void FS_fwrite_with_fopen_r_mode()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(buffer, sizeof(char), small_buf_size, fd[0]);
@@ -330,7 +330,7 @@ static void FS_fread_size_zero()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(buffer, sizeof(char), small_buf_size, fd[0]);
@@ -339,7 +339,7 @@ static void FS_fread_size_zero()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(buffer, 0, small_buf_size, fd[0]);
@@ -358,7 +358,7 @@ static void FS_fread_nmemb_zero()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(buffer, sizeof(char), small_buf_size, fd[0]);
@@ -367,7 +367,7 @@ static void FS_fread_nmemb_zero()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(buffer, sizeof(char), 0, fd[0]);
@@ -386,13 +386,13 @@ static void FS_fread_with_fopen_w_mode()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(buffer, sizeof(char), small_buf_size, fd[0]);
@@ -412,7 +412,7 @@ static void FS_fread_to_fwrite_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), small_buf_size, fd[0]);
@@ -434,13 +434,13 @@ static void FS_fread_empty_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), small_buf_size, fd[0]);
@@ -460,7 +460,7 @@ static void FS_fread_valid_flow_small_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -469,7 +469,7 @@ static void FS_fread_valid_flow_small_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -491,7 +491,7 @@ static void FS_fread_valid_flow_medium_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -500,7 +500,7 @@ static void FS_fread_valid_flow_medium_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -521,7 +521,7 @@ static void FS_fread_valid_flow_large_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -530,7 +530,7 @@ static void FS_fread_valid_flow_large_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -551,7 +551,7 @@ static void FS_fread_valid_flow_small_file_read_more_than_write()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -560,7 +560,7 @@ static void FS_fread_valid_flow_small_file_read_more_than_write()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -580,13 +580,13 @@ static void FS_fgetc_empty_file()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fgetc(fd[0]);
@@ -608,7 +608,7 @@ static void FS_fgetc_valid_flow()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -617,7 +617,7 @@ static void FS_fgetc_valid_flow()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     for (i = 0; (i < (sizeof(read_buf) - 1) && ((ch = fgetc(fd[0])) != EOF) && (ch != '\n')); i++) {
@@ -638,13 +638,13 @@ static void FS_fgetc_with_fopen_w_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fgetc(fd[0]);
@@ -665,13 +665,13 @@ static void FS_fgets_empty_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     TEST_ASSERT_NULL(fgets(buffer, sizeof(buffer), fd[0]));
@@ -687,13 +687,13 @@ static void FS_fgets_null_buffer_zero_len()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     TEST_ASSERT_NULL(fgets(NULL, 0, fd[0]));
@@ -709,13 +709,13 @@ static void FS_fgets_null_buffer()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     TEST_ASSERT_NULL(fgets(NULL, small_buf_size, fd[0]));
@@ -734,7 +734,7 @@ static void FS_fgets_valid_flow()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -743,7 +743,7 @@ static void FS_fgets_valid_flow()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     TEST_ASSERT_NOT_NULL(fgets(read_buf, sizeof(read_buf), fd[0]));
@@ -765,7 +765,7 @@ static void FS_fgets_new_line()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -774,7 +774,7 @@ static void FS_fgets_new_line()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     TEST_ASSERT_NOT_NULL(fgets(read_buf, sizeof(read_buf), fd[0]));
@@ -793,13 +793,13 @@ static void FS_fgets_with_fopen_w_mode()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     TEST_ASSERT_NULL(fgets(buffer, sizeof(buffer), fd[0]));
@@ -831,7 +831,7 @@ static void FS_fflush_valid_flow()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(buffer, sizeof(char), small_buf_size, fd[0]);
@@ -854,7 +854,7 @@ static void FS_fflush_twice()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(buffer, sizeof(char), small_buf_size, fd[0]);
@@ -881,7 +881,7 @@ static void FS_fputc_valid_flow()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fputc(write_ch, fd[0]);
@@ -890,7 +890,7 @@ static void FS_fputc_valid_flow()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     read_ch = fgetc(fd[0]);
@@ -909,13 +909,13 @@ static void FS_fputc_in_read_mode()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fputc(write_ch, fd[0]);
@@ -937,7 +937,7 @@ static void FS_fputs_valid_flow()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fputs(write_buf, fd[0]);
@@ -946,7 +946,7 @@ static void FS_fputs_valid_flow()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -966,13 +966,13 @@ static void FS_fputs_in_read_mode()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fputs(buffer, fd[0]);
@@ -991,13 +991,13 @@ static void FS_fseek_empty_file_seek_set()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_SET);
@@ -1019,7 +1019,7 @@ static void FS_fseek_non_empty_file_seek_set()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1028,7 +1028,7 @@ static void FS_fseek_non_empty_file_seek_set()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_SET);
@@ -1050,13 +1050,13 @@ static void FS_fseek_beyond_empty_file_seek_set()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 10, SEEK_SET);
@@ -1082,7 +1082,7 @@ static void FS_fseek_beyond_non_empty_file_seek_set()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1091,7 +1091,7 @@ static void FS_fseek_beyond_non_empty_file_seek_set()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], sizeof(write_buf) + 1, SEEK_SET);
@@ -1114,13 +1114,13 @@ static void FS_fseek_empty_file_seek_cur()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_CUR);
@@ -1142,7 +1142,7 @@ static void FS_fseek_non_empty_file_seek_cur()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1151,7 +1151,7 @@ static void FS_fseek_non_empty_file_seek_cur()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_CUR);
@@ -1172,13 +1172,13 @@ static void FS_fseek_beyond_empty_file_seek_cur()
     char read_buf[small_buf_size] = {};
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 1, SEEK_CUR);
@@ -1204,7 +1204,7 @@ static void FS_fseek_beyond_non_empty_file_seek_cur()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1213,7 +1213,7 @@ static void FS_fseek_beyond_non_empty_file_seek_cur()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], sizeof(write_buf) + 1, SEEK_CUR);
@@ -1236,13 +1236,13 @@ static void FS_fseek_empty_file_seek_end()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_END);
@@ -1264,7 +1264,7 @@ static void FS_fseek_non_empty_file_seek_end()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1273,7 +1273,7 @@ static void FS_fseek_non_empty_file_seek_end()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_END);
@@ -1295,13 +1295,13 @@ static void FS_fseek_beyond_empty_file_seek_end()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 1, SEEK_END);
@@ -1327,7 +1327,7 @@ static void FS_fseek_beyond_non_empty_file_seek_end()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1336,7 +1336,7 @@ static void FS_fseek_beyond_non_empty_file_seek_end()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], sizeof(write_buf) + 1, SEEK_END);
@@ -1361,7 +1361,7 @@ static void FS_fseek_negative_non_empty_file_seek_end()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1370,7 +1370,7 @@ static void FS_fseek_negative_non_empty_file_seek_end()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], -(sizeof(write_buf)), SEEK_END);
@@ -1397,7 +1397,7 @@ static void FS_fgetpos_rewrite_check_data()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fgetpos(fd[0], &pos);
@@ -1415,7 +1415,7 @@ static void FS_fgetpos_rewrite_check_data()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -1439,7 +1439,7 @@ static void FS_fscanf_valid_flow()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fprintf(fd[0], "%d %s", 123, write_buf);
@@ -1448,7 +1448,7 @@ static void FS_fscanf_valid_flow()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fscanf(fd[0], "%d", &num);
@@ -1472,7 +1472,7 @@ static void FS_fscanf_empty_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fscanf(fd[0], "%d", &num);
@@ -1493,7 +1493,7 @@ static void FS_fscanf_more_fields_than_exist()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fprintf(fd[0], "%d %s", 123, write_buf);
@@ -1502,7 +1502,7 @@ static void FS_fscanf_more_fields_than_exist()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fscanf(fd[0], "%d", &num);
@@ -1529,13 +1529,13 @@ static void FS_fprintf_read_mode()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fprintf(fd[0], "%d", 123);
@@ -1554,10 +1554,10 @@ static void FS_freopen_point_to_same_file()
 {
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[1] = freopen("/defult_fs/" "new_file_name", "wb", fd[0])) != NULL);
+    res = !((fd[1] = freopen("sd/" "new_file_name", "wb", fd[0])) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     TEST_ASSERT_EQUAL(fd[0], fd[1]);
@@ -1576,13 +1576,13 @@ static void FS_freopen_valid_flow()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "wb")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "wb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
     TEST_ASSERT_EQUAL(sizeof(write_buf), write_sz);
 
-    res = !((fd[1] = freopen("/defult_fs/" "filename", "rb", fd[0])) != NULL);
+    res = !((fd[1] = freopen("sd/" "filename", "rb", fd[0])) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -1605,7 +1605,7 @@ static void FS_fopen_write_one_byte_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(&write_buf, sizeof(char), 1, fd[0]);
@@ -1614,7 +1614,7 @@ static void FS_fopen_write_one_byte_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -1635,7 +1635,7 @@ static void FS_fopen_write_two_byte_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1644,7 +1644,7 @@ static void FS_fopen_write_two_byte_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -1665,7 +1665,7 @@ static void FS_fopen_write_five_byte_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1674,7 +1674,7 @@ static void FS_fopen_write_five_byte_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -1695,7 +1695,7 @@ static void FS_fopen_write_fifteen_byte_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1704,7 +1704,7 @@ static void FS_fopen_write_fifteen_byte_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -1727,7 +1727,7 @@ static void FS_fopen_write_five_Kbyte_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     memcpy(write_buf, check_buf, sizeof(check_buf) - 1);
@@ -1737,7 +1737,7 @@ static void FS_fopen_write_five_Kbyte_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "rb+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "rb+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf) - 1, fd[0]);
@@ -1760,7 +1760,7 @@ static void FS_fseek_rewrite_non_empty_file_begining()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1769,7 +1769,7 @@ static void FS_fseek_rewrite_non_empty_file_begining()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_SET);
@@ -1781,7 +1781,7 @@ static void FS_fseek_rewrite_non_empty_file_begining()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_SET);
@@ -1807,7 +1807,7 @@ static void FS_fseek_rewrite_non_empty_file_middle()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1816,7 +1816,7 @@ static void FS_fseek_rewrite_non_empty_file_middle()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 5, SEEK_SET);
@@ -1828,7 +1828,7 @@ static void FS_fseek_rewrite_non_empty_file_middle()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_SET);
@@ -1854,7 +1854,7 @@ static void FS_fseek_rewrite_non_empty_file_end()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1863,7 +1863,7 @@ static void FS_fseek_rewrite_non_empty_file_end()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 9, SEEK_SET);
@@ -1875,7 +1875,7 @@ static void FS_fseek_rewrite_non_empty_file_end()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     res = fseek(fd[0], 0, SEEK_SET);
@@ -1899,7 +1899,7 @@ static void FS_append_empty_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "a")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "a")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf), fd[0]);
@@ -1908,7 +1908,7 @@ static void FS_append_empty_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int read_sz = fread(read_buf, sizeof(char), sizeof(read_buf), fd[0]);
@@ -1931,7 +1931,7 @@ static void FS_append_non_empty_file()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "a")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "a")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     int write_sz = fwrite(write_buf, sizeof(char), sizeof(write_buf) - 1, fd[0]);
@@ -1940,7 +1940,7 @@ static void FS_append_non_empty_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "a+")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "a+")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     write_sz = fwrite(rewrite_buf, sizeof(char), sizeof(rewrite_buf), fd[0]);
@@ -1949,7 +1949,7 @@ static void FS_append_non_empty_file()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     memcpy(check_buf, write_buf, sizeof(write_buf) - 1);
@@ -1974,7 +1974,7 @@ static void FS_write_read_random_data()
     init();
 
     // Fill write_buf buffer with random data and write the data into the file
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     for (i = 0; i < medium_buf_size; i++) {
@@ -1987,7 +1987,7 @@ static void FS_write_read_random_data()
     TEST_ASSERT_EQUAL(0, res);
 
     // Read back the data from the file and store them in data_read
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     for (i = 0; i < medium_buf_size; i++) {
@@ -2008,7 +2008,7 @@ static void FS_fill_data_and_seek()
 
     init();
 
-    int res = !((fd[0] = fopen("/defult_fs/" "filename", "w")) != NULL);
+    int res = !((fd[0] = fopen("sd/" "filename", "w")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     for (i = 0; i < 256; i++) {
@@ -2019,7 +2019,7 @@ static void FS_fill_data_and_seek()
     res = fclose(fd[0]);
     TEST_ASSERT_EQUAL(0, res);
 
-    res = !((fd[0] = fopen("/defult_fs/" "filename", "r")) != NULL);
+    res = !((fd[0] = fopen("sd/" "filename", "r")) != NULL);
     TEST_ASSERT_EQUAL(0, res);
 
     for (i = 1; i <= 255; i++) {
