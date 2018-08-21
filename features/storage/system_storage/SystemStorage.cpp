@@ -15,8 +15,6 @@
 #include "SDBlockDevice.h"
 #endif
 
-namespace mbed {
-
 MBED_WEAK BlockDevice* BlockDevice::get_default_instance()
 {
 #if COMPONENT_SPIF
@@ -80,7 +78,5 @@ MBED_WEAK FileSystem * FileSystem::get_default_instance()
     return NULL;
 
 #endif
-
-}
 
 }
