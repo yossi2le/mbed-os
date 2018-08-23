@@ -30,6 +30,8 @@
 #include "SDBlockDevice.h"
 #endif
 
+using namespace mbed;
+
 MBED_WEAK BlockDevice *BlockDevice::get_default_instance()
 {
 #if COMPONENT_SPIF
