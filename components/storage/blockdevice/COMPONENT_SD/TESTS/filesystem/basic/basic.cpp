@@ -215,8 +215,9 @@ static control_t fsfat_basic_test_01()
     TEST_ASSERT_MESSAGE(fp1 == fp, "Error: cannot open file for reading");
 
     for (i = 1; i <= 255; i++) {
-        ret = fseek (fp, (long) -i, SEEK_END);
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s:Error: fseek() failed (ret=%d).\n", __func__, (int) ret);
+        ret = fseek (fp, (long) - i, SEEK_END);
+        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s:Error: fseek() failed (ret=%d).\n", __func__,
+                        (int) ret);
         TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
 
         if ((j = getc (fp)) != 256 - i) {
@@ -224,7 +225,8 @@ static control_t fsfat_basic_test_01()
             TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
         }
         ret = fseek (fp, (long) i, SEEK_SET);
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (ret=%d).\n", __func__, (int) ret);
+        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (ret=%d).\n", __func__,
+                        (int) ret);
         TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
 
         if ((j = getc (fp)) != i) {
@@ -232,11 +234,13 @@ static control_t fsfat_basic_test_01()
             TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
         }
         if ((ret = fseek (fp, (long) i, SEEK_SET))) {
-            FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (ret=%d).\n", __func__, (int) ret);
+            FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (ret=%d).\n", __func__,
+                            (int) ret);
             TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
         }
         if ((ret = fseek (fp, (long) (i >= 128 ? -128 : 128), SEEK_CUR))) {
-            FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_CUR (ret=%d).\n", __func__, (int) ret);
+            FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_CUR (ret=%d).\n", __func__,
+                            (int) ret);
             TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
         }
         if ((j = getc (fp)) != (i >= 128 ? i - 128 : i + 128)) {
@@ -271,20 +275,23 @@ static control_t fsfat_basic_test_02()
     FSFAT_FENTRYLOG("%s:entered\n", __func__);
     f = fopen(filename, "w+");
     if (f == NULL) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot open file for writing (filename=%s).\n", __func__, filename);
+        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot open file for writing (filename=%s).\n",
+                        __func__, filename);
         TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
     }
 
     ret = fputs(hello, f);
     if (ret == EOF) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fputs() failed to write string to file (filename=%s, string=%s).\n", __func__, filename, hello);
+        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE,
+                        "%s: Error: fputs() failed to write string to file (filename=%s, string=%s).\n", __func__, filename, hello);
         TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
     }
 
     rewind(f);
     rets = fgets(buf, sizeof(buf), f);
     if (rets == NULL) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fgets() failed to get string from file (filename=%s).\n", __func__, filename);
+        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE,
+                        "%s: Error: fgets() failed to get string from file (filename=%s).\n", __func__, filename);
         TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
     }
     rets = NULL;
@@ -292,26 +299,23 @@ static control_t fsfat_basic_test_02()
     rewind(f);
     ret = fputs(buf, f);
     if (ret == EOF) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fputs() failed to write string to file (filename=%s, string=%s).\n", __func__, filename, buf);
+        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE,
+                        "%s: Error: fputs() failed to write string to file (filename=%s, string=%s).\n", __func__, filename, buf);
         TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
     }
 
     rewind(f);
     {
         register size_t i;
-        for (i = 0; i < replace_from; ++i)
-        {
+        for (i = 0; i < replace_from; ++i) {
             int c = getc(f);
-            if (c == EOF)
-            {
+            if (c == EOF) {
                 FSFAT_DBGLOG("EOF at %u.\n", i);
                 lose = 1;
                 break;
-            }
-            else if (c != hello[i])
-            {
+            } else if (c != hello[i]) {
                 FSFAT_DBGLOG("Got '%c' instead of '%c' at %u.\n",
-                (unsigned char) c, hello[i], i);
+                             (unsigned char) c, hello[i], i);
                 lose = 1;
                 break;
             }
@@ -320,13 +324,12 @@ static control_t fsfat_basic_test_02()
     /* WARNING: printf("%s: here1. (lose = %d)\n", __func__, lose); */
     {
         long int where = ftell(f);
-        if (where == replace_from)
-        {
+        if (where == replace_from) {
             register size_t i;
             for (i = replace_from; i < replace_to; ++i) {
                 if (putc(replace[i], f) == EOF) {
                     FSFAT_DBGLOG("putc('%c') got %s at %u.\n",
-                    replace[i], strerror(errno), i);
+                                 replace[i], strerror(errno), i);
                     lose = 1;
                     break;
                 }
@@ -334,38 +337,31 @@ static control_t fsfat_basic_test_02()
                  * FSFAT_DBGLOG("%s: here1.5. (char = %c, char as int=%d, ret=%d) \n", __func__, replace[i], (int) replace[i], ret);
                  */
             }
-        }
-        else if (where == -1L)
-        {
+        } else if (where == -1L) {
             FSFAT_DBGLOG("ftell got %s (should be at %u).\n",
-            strerror(errno), replace_from);
+                         strerror(errno), replace_from);
             lose = 1;
-        }
-        else
-        {
+        } else {
             FSFAT_DBGLOG("ftell returns %ld; should be %u.\n", where, replace_from);
             lose = 1;
         }
     }
 
-    if (!lose)
-    {
+    if (!lose) {
         rewind(f);
         memset(buf, 0, BUFSIZ);
-        if (fgets(buf, sizeof(buf), f) == NULL)
-        {
+        if (fgets(buf, sizeof(buf), f) == NULL) {
             FSFAT_DBGLOG("fgets got %s.\n", strerror(errno));
             lose = 1;
-        }
-        else if (strcmp(buf, replace))
-        {
+        } else if (strcmp(buf, replace)) {
             FSFAT_DBGLOG("Read \"%s\" instead of \"%s\".\n", buf, replace);
             lose = 1;
         }
     }
 
     if (lose) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Test Failed. Losing file (filename=%s).\n", __func__, filename);
+        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Test Failed. Losing file (filename=%s).\n",
+                        __func__, filename);
         TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
     }
     remove(filename);
@@ -384,7 +380,8 @@ static control_t fsfat_basic_test_03()
 
     FSFAT_FENTRYLOG("%s:entered\n", __func__);
     fn = tmpnam((char *) NULL);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: appeared to generate a filename when function is not implemented.\n", __func__);
+    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE,
+                    "%s: Error: appeared to generate a filename when function is not implemented.\n", __func__);
     TEST_ASSERT_MESSAGE(fn == NULL, fsfat_basic_msg_g);
     return CaseNext;
 }
@@ -435,15 +432,20 @@ static control_t fsfat_basic_test_04()
 #ifndef __ARMCC_VERSION
     int ret = -1;
     ret = fsfat_basic_fileno_check("stdin", stdin, STDIN_FILENO);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: stdin does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stdin, fileno(stdin));
+    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE,
+                    "%s: Error: stdin does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stdin, fileno(stdin));
     TEST_ASSERT_MESSAGE(ret == true, fsfat_basic_msg_g);
 
     ret = fsfat_basic_fileno_check("stdout", stdout, STDOUT_FILENO);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: stdout does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stdout, fileno(stdout));
+    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE,
+                    "%s: Error: stdout does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stdout,
+                    fileno(stdout));
     TEST_ASSERT_MESSAGE(ret == true, fsfat_basic_msg_g);
 
     ret = fsfat_basic_fileno_check("stderr", stderr, STDERR_FILENO);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: stderr does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stderr, fileno(stderr));
+    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE,
+                    "%s: Error: stderr does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stderr,
+                    fileno(stderr));
     TEST_ASSERT_MESSAGE(ret == true, fsfat_basic_msg_g);
 #endif  /* __ARMCC_VERSION */
     return CaseNext;
@@ -486,8 +488,9 @@ static control_t fsfat_basic_test_05()
     TEST_ASSERT_MESSAGE(d != NULL, fsfat_basic_msg_g);
 
     struct dirent *p;
-    while ((p = readdir(d)) != NULL)
+    while ((p = readdir(d)) != NULL) {
         FSFAT_DBGLOG("%s\n", p->d_name);
+    }
     closedir(d);
 
     return CaseNext;
@@ -695,7 +698,7 @@ static control_t fsfat_basic_test_08()
 bool fsfat_basic_test_sf_file_write_stdio(const char *filename, const int kib_rw)
 {
     int ret = -1;
-    FILE* file = fopen(filename, "w");
+    FILE *file = fopen(filename, "w");
 
     FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
     TEST_ASSERT_MESSAGE(file != NULL, fsfat_basic_msg_g);
@@ -722,7 +725,7 @@ bool fsfat_basic_test_sf_file_write_stdio(const char *filename, const int kib_rw
 
 bool fsfat_basic_test_sf_file_read_stdio(const char *filename, const int kib_rw)
 {
-    FILE* file = fopen(filename, "r");
+    FILE *file = fopen(filename, "r");
 
     FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
     TEST_ASSERT_MESSAGE(file != NULL, fsfat_basic_msg_g);
@@ -907,20 +910,20 @@ utest::v1::status_t greentea_setup(const size_t number_of_cases)
 
 
 Case cases[] = {
-           /*          1         2         3         4         5         6        7  */
-           /* 1234567890123456789012345678901234567890123456789012345678901234567890 */
-        Case("FSFAT_BASIC_TEST_00: fopen()/fgetc()/fprintf()/fclose() test.", FSFAT_BASIC_TEST_00),
-        Case("FSFAT_BASIC_TEST_01: fopen()/fseek()/fclose() test.", FSFAT_BASIC_TEST_01),
-        /* WARNING: Test case not working but currently not required for PAL support
-         * Case("FSFAT_BASIC_TEST_02: fopen()/fgets()/fputs()/ftell()/rewind()/remove() test.", FSFAT_BASIC_TEST_02) */
-        Case("FSFAT_BASIC_TEST_03: tmpnam() test.", FSFAT_BASIC_TEST_03),
-        Case("FSFAT_BASIC_TEST_04: fileno() test.", FSFAT_BASIC_TEST_04),
-        Case("FSFAT_BASIC_TEST_05: opendir() basic test.", FSFAT_BASIC_TEST_05),
-        Case("FSFAT_BASIC_TEST_06: fread()/fwrite() file to sdcard.", FSFAT_BASIC_TEST_06),
-        Case("FSFAT_BASIC_TEST_07: sdcard fwrite() file test.", FSFAT_BASIC_TEST_07),
-        Case("FSFAT_BASIC_TEST_08: FATFileSystem::read()/write() test.", FSFAT_BASIC_TEST_08),
-        Case("FSFAT_BASIC_TEST_09: POSIX FILE API fread()/fwrite() test.", FSFAT_BASIC_TEST_09),
-        Case("FSFAT_BASIC_TEST_10: ChanFS read()/write()) test.", FSFAT_BASIC_TEST_10),
+    /*          1         2         3         4         5         6        7  */
+    /* 1234567890123456789012345678901234567890123456789012345678901234567890 */
+    Case("FSFAT_BASIC_TEST_00: fopen()/fgetc()/fprintf()/fclose() test.", FSFAT_BASIC_TEST_00),
+    Case("FSFAT_BASIC_TEST_01: fopen()/fseek()/fclose() test.", FSFAT_BASIC_TEST_01),
+    /* WARNING: Test case not working but currently not required for PAL support
+     * Case("FSFAT_BASIC_TEST_02: fopen()/fgets()/fputs()/ftell()/rewind()/remove() test.", FSFAT_BASIC_TEST_02) */
+    Case("FSFAT_BASIC_TEST_03: tmpnam() test.", FSFAT_BASIC_TEST_03),
+    Case("FSFAT_BASIC_TEST_04: fileno() test.", FSFAT_BASIC_TEST_04),
+    Case("FSFAT_BASIC_TEST_05: opendir() basic test.", FSFAT_BASIC_TEST_05),
+    Case("FSFAT_BASIC_TEST_06: fread()/fwrite() file to sdcard.", FSFAT_BASIC_TEST_06),
+    Case("FSFAT_BASIC_TEST_07: sdcard fwrite() file test.", FSFAT_BASIC_TEST_07),
+    Case("FSFAT_BASIC_TEST_08: FATFileSystem::read()/write() test.", FSFAT_BASIC_TEST_08),
+    Case("FSFAT_BASIC_TEST_09: POSIX FILE API fread()/fwrite() test.", FSFAT_BASIC_TEST_09),
+    Case("FSFAT_BASIC_TEST_10: ChanFS read()/write()) test.", FSFAT_BASIC_TEST_10),
 };
 
 

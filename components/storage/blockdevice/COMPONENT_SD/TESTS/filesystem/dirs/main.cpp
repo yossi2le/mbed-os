@@ -67,7 +67,8 @@ uint8_t wbuffer[MBED_TEST_BUFFER];
 
 // tests
 
-void test_directory_tests() {
+void test_directory_tests()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -80,7 +81,8 @@ void test_directory_tests() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_root_directory() {
+void test_root_directory()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -99,7 +101,8 @@ void test_root_directory() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_directory_creation() {
+void test_directory_creation()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -116,7 +119,8 @@ void test_directory_creation() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_file_creation() {
+void test_file_creation()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -135,9 +139,10 @@ void test_file_creation() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void dir_file_check(char *list[], uint32_t elements) {
+void dir_file_check(char *list[], uint32_t elements)
+{
     int res;
-    while(1) {
+    while (1) {
         res = dir[0].read(&ent);
         if (0 == res) {
             break;
@@ -150,15 +155,15 @@ void dir_file_check(char *list[], uint32_t elements) {
                     TEST_ASSERT(1);
                 }
                 break;
-            }
-            else if( i == elements) {
+            } else if ( i == elements) {
                 TEST_ASSERT_EQUAL(0, res);
             }
         }
     }
 }
 
-void test_directory_iteration() {
+void test_directory_iteration()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -168,7 +173,7 @@ void test_directory_iteration() {
     TEST_ASSERT_EQUAL(0, res);
     char *dir_list[] = {"potato", "burito", ".", ".."};
 
-    dir_file_check(dir_list, (sizeof(dir_list)/sizeof(dir_list[0])));
+    dir_file_check(dir_list, (sizeof(dir_list) / sizeof(dir_list[0])));
 
     res = dir[0].close();
     TEST_ASSERT_EQUAL(0, res);
@@ -178,7 +183,8 @@ void test_directory_iteration() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_directory_failures() {
+void test_directory_failures()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -203,7 +209,8 @@ void test_directory_failures() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_nested_directories() {
+void test_nested_directories()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -226,7 +233,7 @@ void test_nested_directories() {
         res = dir[0].open(&fs, "/");
         TEST_ASSERT_EQUAL(0, res);
         char *dir_list[] = {"potato", "baked", "sweet", "fried", ".", ".."};
-        dir_file_check(dir_list, (sizeof(dir_list)/sizeof(dir_list[0])));
+        dir_file_check(dir_list, (sizeof(dir_list) / sizeof(dir_list[0])));
         res = dir[0].close();
         TEST_ASSERT_EQUAL(0, res);
         res = fs.unmount();
@@ -237,7 +244,8 @@ void test_nested_directories() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_multi_block_directory() {
+void test_multi_block_directory()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -247,8 +255,8 @@ void test_multi_block_directory() {
         res = fs.mkdir("cactus", 0777);
         TEST_ASSERT_EQUAL(0, res);
         for (int i = 0; i < 128; i++) {
-            sprintf((char*)buffer, "cactus/test%d", i);
-            res = fs.mkdir((char*)buffer, 0777);
+            sprintf((char *)buffer, "cactus/test%d", i);
+            res = fs.mkdir((char *)buffer, 0777);
             TEST_ASSERT_EQUAL(0, res);
         }
         res = fs.unmount();
@@ -263,14 +271,14 @@ void test_multi_block_directory() {
 
 #if (MBED_TEST_FILESYSTEM != FATFileSystem)
         char *dir_list[] = {".", ".."};
-        dir_file_check(dir_list, (sizeof(dir_list)/sizeof(dir_list[0])));
+        dir_file_check(dir_list, (sizeof(dir_list) / sizeof(dir_list[0])));
 #endif
 
         for (int i = 0; i < 128; i++) {
-            sprintf((char*)buffer, "test%d", i);
+            sprintf((char *)buffer, "test%d", i);
             res = dir[0].read(&ent);
             TEST_ASSERT_EQUAL(1, res);
-            res = strcmp(ent.d_name, (char*)buffer);
+            res = strcmp(ent.d_name, (char *)buffer);
             TEST_ASSERT_EQUAL(0, res);
         }
         res = dir[0].read(&ent);
@@ -285,7 +293,8 @@ void test_multi_block_directory() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_directory_remove() {
+void test_directory_remove()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -305,7 +314,7 @@ void test_directory_remove() {
 
 #if (MBED_TEST_FILESYSTEM != FATFileSystem)
         char *dir_list[] = {".", ".."};
-        dir_file_check(dir_list, (sizeof(dir_list)/sizeof(dir_list[0])));
+        dir_file_check(dir_list, (sizeof(dir_list) / sizeof(dir_list[0])));
 #endif
 
         res = dir[0].read(&ent);
@@ -324,7 +333,7 @@ void test_directory_remove() {
         res = dir[0].open(&fs, "/");
         TEST_ASSERT_EQUAL(0, res);
         char *dir_list[] = {"burito", "cactus", ".", ".."};
-        dir_file_check(dir_list, (sizeof(dir_list)/sizeof(dir_list[0])));
+        dir_file_check(dir_list, (sizeof(dir_list) / sizeof(dir_list[0])));
         res = dir[0].close();
         TEST_ASSERT_EQUAL(0, res);
         res = fs.unmount();
@@ -335,7 +344,8 @@ void test_directory_remove() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_directory_rename() {
+void test_directory_rename()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -369,7 +379,7 @@ void test_directory_rename() {
         res = dir[0].open(&fs, "hotpotato");
         TEST_ASSERT_EQUAL(0, res);
         char *dir_list[] = {"baked", "sweet", "fried", ".", ".."};
-        dir_file_check(dir_list, (sizeof(dir_list)/sizeof(dir_list[0])));
+        dir_file_check(dir_list, (sizeof(dir_list) / sizeof(dir_list[0])));
         res = dir[0].close();
         TEST_ASSERT_EQUAL(0, res);
         res = fs.unmount();
@@ -401,7 +411,7 @@ void test_directory_rename() {
         res = dir[0].open(&fs, "warmpotato");
         TEST_ASSERT_EQUAL(0, res);
         char *dir_list[] = {"baked", "sweet", "fried", ".", ".."};
-        dir_file_check(dir_list, (sizeof(dir_list)/sizeof(dir_list[0])));
+        dir_file_check(dir_list, (sizeof(dir_list) / sizeof(dir_list[0])));
         res = dir[0].close();
         TEST_ASSERT_EQUAL(0, res);
         res = fs.unmount();
@@ -433,7 +443,7 @@ void test_directory_rename() {
         res = dir[0].open(&fs, "coldpotato");
         TEST_ASSERT_EQUAL(0, res);
         char *dir_list[] = {"baked", "sweet", "fried", ".", ".."};
-        dir_file_check(dir_list, (sizeof(dir_list)/sizeof(dir_list[0])));
+        dir_file_check(dir_list, (sizeof(dir_list) / sizeof(dir_list[0])));
         res = dir[0].close();
         TEST_ASSERT_EQUAL(0, res);
         res = fs.unmount();
@@ -447,7 +457,8 @@ void test_directory_rename() {
 
 
 // test setup
-utest::v1::status_t test_setup(const size_t number_of_cases) {
+utest::v1::status_t test_setup(const size_t number_of_cases)
+{
     GREENTEA_SETUP(MBED_TEST_TIMEOUT, "default_auto");
     return verbose_test_setup_handler(number_of_cases);
 }
@@ -467,6 +478,7 @@ Case cases[] = {
 
 Specification specification(test_setup, cases);
 
-int main() {
+int main()
+{
     return !Harness::run(specification);
 }

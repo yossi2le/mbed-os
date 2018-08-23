@@ -32,7 +32,7 @@ class SDBlockDevice : public BlockDevice {
 public:
     /** Lifetime of an SD card
      */
-    SDBlockDevice(PinName mosi, PinName miso, PinName sclk, PinName cs, uint64_t hz=1000000, bool crc_on=0);
+    SDBlockDevice(PinName mosi, PinName miso, PinName sclk, PinName cs, uint64_t hz = 1000000, bool crc_on = 0);
     virtual ~SDBlockDevice();
 
     /** Initialize a block device
@@ -155,7 +155,7 @@ private:
     };
 
     uint8_t _card_type;
-    int _cmd(SDBlockDevice::cmdSupported cmd, uint32_t arg, bool isAcmd=0, uint32_t *resp=NULL);
+    int _cmd(SDBlockDevice::cmdSupported cmd, uint32_t arg, bool isAcmd = 0, uint32_t *resp = NULL);
     int _cmd8();
 
     /*  Move the SDCard into the SPI Mode idle state
@@ -188,10 +188,10 @@ private:
     void _spi_wait(uint8_t count);
 
     bool _wait_token(uint8_t token);        /**< Wait for token */
-    bool _wait_ready(uint16_t ms=300);      /**< 300ms default wait for card to be ready */
-    int _read(uint8_t * buffer, uint32_t length);
-    int _read_bytes(uint8_t * buffer, uint32_t length);
-    uint8_t _write(const uint8_t *buffer,uint8_t token, uint32_t length);
+    bool _wait_ready(uint16_t ms = 300);    /**< 300ms default wait for card to be ready */
+    int _read(uint8_t *buffer, uint32_t length);
+    int _read_bytes(uint8_t *buffer, uint32_t length);
+    uint8_t _write(const uint8_t *buffer, uint8_t token, uint32_t length);
     int _freq(void);
 
     /* Chip Select and SPI mode select */
@@ -199,11 +199,13 @@ private:
     void _select();
     void _deselect();
 
-    virtual void lock() {
+    virtual void lock()
+    {
         _mutex.lock();
     }
 
-    virtual void unlock() {
+    virtual void unlock()
+    {
         _mutex.unlock();
     }
 

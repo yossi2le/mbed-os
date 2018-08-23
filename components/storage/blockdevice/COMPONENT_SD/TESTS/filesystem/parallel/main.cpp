@@ -67,7 +67,8 @@ volatile bool count_done = 0;
 
 // tests
 
-void test_file_tests() {
+void test_file_tests()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -80,7 +81,8 @@ void test_file_tests() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void write_file_data (char count) {
+void write_file_data (char count)
+{
 
     char filename[10];
     uint8_t wbuffer[MBED_TEST_BUFFER];
@@ -89,15 +91,15 @@ void write_file_data (char count) {
     sprintf(filename, "%s%d", "data", count);
     res = file[count].open(&fs, filename, O_WRONLY | O_CREAT);
     TEST_ASSERT_EQUAL(0, res);
-    
-    char letter = 'A'+ count;
+
+    char letter = 'A' + count;
     for (uint32_t i = 0; i < MBED_TEST_BUFFER; i++) {
         wbuffer[i] = letter++;
         if ('z' == letter) {
             letter = 'A' + count;
-        }    
+        }
     }
-    
+
     for (uint32_t i = 0; i < 5; i++) {
         res = file[count].write(wbuffer, MBED_TEST_BUFFER);
         TEST_ASSERT_EQUAL(MBED_TEST_BUFFER, res);
@@ -107,7 +109,8 @@ void write_file_data (char count) {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void read_file_data (char count) {
+void read_file_data (char count)
+{
     char filename[10];
     uint8_t rbuffer[MBED_TEST_BUFFER];
     int res;
@@ -133,28 +136,29 @@ void read_file_data (char count) {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_thread_access_test() {
-    
-    Thread *data[MBED_THREAD_COUNT];    
+void test_thread_access_test()
+{
+
+    Thread *data[MBED_THREAD_COUNT];
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
     res = fs.mount(&bd);
     TEST_ASSERT_EQUAL(0, res);
-    
+
     // Write threads in parallel
     for (char thread_count = 0; thread_count < MBED_THREAD_COUNT; thread_count++) {
         data[thread_count] = new Thread(osPriorityNormal);
-        data[thread_count]->start(callback((void(*)(void*))write_file_data, (void*)thread_count));
+        data[thread_count]->start(callback((void(*)(void *))write_file_data, (void *)thread_count));
     }
-    
+
     // Wait for write thread to join before creating read thread
     for (char thread_count = 0; thread_count < MBED_THREAD_COUNT; thread_count++) {
         data[thread_count]->join();
         delete data[thread_count];
         data[thread_count] = new Thread(osPriorityNormal);
-        data[thread_count]->start(callback((void(*)(void*))read_file_data, (void*)thread_count));
+        data[thread_count]->start(callback((void(*)(void *))read_file_data, (void *)thread_count));
     }
-    
+
     // Wait for read threads to join
     for (char thread_count = 0; thread_count < MBED_THREAD_COUNT; thread_count++) {
         data[thread_count]->join();
@@ -167,7 +171,8 @@ void test_thread_access_test() {
 }
 
 // test setup
-utest::v1::status_t test_setup(const size_t number_of_cases) {
+utest::v1::status_t test_setup(const size_t number_of_cases)
+{
     GREENTEA_SETUP(MBED_TEST_TIMEOUT, "default_auto");
     return verbose_test_setup_handler(number_of_cases);
 }
@@ -179,6 +184,7 @@ Case cases[] = {
 
 Specification specification(test_setup, cases);
 
-int main() {
+int main()
+{
     return !Harness::run(specification);
 }

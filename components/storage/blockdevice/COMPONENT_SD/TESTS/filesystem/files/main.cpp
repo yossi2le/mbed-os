@@ -66,11 +66,13 @@ uint8_t wbuffer[MBED_TEST_BUFFER];
 
 static char file_counter = 0;
 const char *filenames[] = {"smallavacado", "mediumavacado", "largeavacado",
-                          "blockfile", "bigblockfile", "hello", ".", ".."};
+                           "blockfile", "bigblockfile", "hello", ".", ".."
+                          };
 
 // tests
 
-void test_file_tests() {
+void test_file_tests()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -83,7 +85,8 @@ void test_file_tests() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_simple_file_test() {
+void test_simple_file_test()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -116,7 +119,8 @@ void test_simple_file_test() {
 }
 
 template <int file_size, int write_size, int read_size>
-void test_write_file_test() {
+void test_write_file_test()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -154,7 +158,7 @@ void test_write_file_test() {
             chunk = (chunk < size - i) ? chunk : size - i;
             res = file[0].read(buffer, chunk);
             TEST_ASSERT_EQUAL(chunk, res);
-            for (size_t b = 0; b < chunk && i+b < size; b++) {
+            for (size_t b = 0; b < chunk && i + b < size; b++) {
                 res = buffer[b];
                 TEST_ASSERT_EQUAL(rand() & 0xff, res);
             }
@@ -170,7 +174,8 @@ void test_write_file_test() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_non_overlap_check() {
+void test_non_overlap_check()
+{
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
 
@@ -186,7 +191,7 @@ void test_non_overlap_check() {
             chunk = (chunk < size - i) ? chunk : size - i;
             res = file[0].read(buffer, chunk);
             TEST_ASSERT_EQUAL(chunk, res);
-            for (size_t b = 0; b < chunk && i+b < size; b++) {
+            for (size_t b = 0; b < chunk && i + b < size; b++) {
                 res = buffer[b];
                 TEST_ASSERT_EQUAL(rand() & 0xff, res);
             }
@@ -209,7 +214,7 @@ void test_non_overlap_check() {
             chunk = (chunk < size - i) ? chunk : size - i;
             res = file[0].read(buffer, chunk);
             TEST_ASSERT_EQUAL(chunk, res);
-            for (size_t b = 0; b < chunk && i+b < size; b++) {
+            for (size_t b = 0; b < chunk && i + b < size; b++) {
                 res = buffer[b];
                 TEST_ASSERT_EQUAL(rand() & 0xff, res);
             }
@@ -232,7 +237,7 @@ void test_non_overlap_check() {
             chunk = (chunk < size - i) ? chunk : size - i;
             res = file[0].read(buffer, chunk);
             TEST_ASSERT_EQUAL(chunk, res);
-            for (size_t b = 0; b < chunk && i+b < size; b++) {
+            for (size_t b = 0; b < chunk && i + b < size; b++) {
                 res = buffer[b];
                 TEST_ASSERT_EQUAL(rand() & 0xff, res);
             }
@@ -247,7 +252,8 @@ void test_non_overlap_check() {
     TEST_ASSERT_EQUAL(0, res);
 }
 
-void test_dir_check() {
+void test_dir_check()
+{
 
     int res = bd.init();
     TEST_ASSERT_EQUAL(0, res);
@@ -257,14 +263,14 @@ void test_dir_check() {
         TEST_ASSERT_EQUAL(0, res);
         res = dir[0].open(&fs, "/");
         TEST_ASSERT_EQUAL(0, res);
-        int numFiles = sizeof(filenames)/sizeof(filenames[0]);
+        int numFiles = sizeof(filenames) / sizeof(filenames[0]);
         // Check the filenames in directory
-        while(1) {
+        while (1) {
             res = dir[0].read(&ent);
             if (0 == res) {
                 break;
             }
-            for (int i=0; i < numFiles ; i++) {
+            for (int i = 0; i < numFiles ; i++) {
                 res = strcmp(ent.d_name, filenames[i]);
                 if (0 == res) {
                     res = ent.d_type;
@@ -272,8 +278,7 @@ void test_dir_check() {
                         TEST_ASSERT(1);
                     }
                     break;
-                }
-                else if( i == numFiles) {
+                } else if ( i == numFiles) {
                     TEST_ASSERT_EQUAL(0, res);
                 }
             }
@@ -290,7 +295,8 @@ void test_dir_check() {
 
 
 // test setup
-utest::v1::status_t test_setup(const size_t number_of_cases) {
+utest::v1::status_t test_setup(const size_t number_of_cases)
+{
     GREENTEA_SETUP(MBED_TEST_TIMEOUT, "default_auto");
     return verbose_test_setup_handler(number_of_cases);
 }
@@ -309,6 +315,7 @@ Case cases[] = {
 
 Specification specification(test_setup, cases);
 
-int main() {
+int main()
+{
     return !Harness::run(specification);
 }
