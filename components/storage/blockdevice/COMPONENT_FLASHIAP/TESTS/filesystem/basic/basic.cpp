@@ -53,14 +53,14 @@
  */
 
 #include "mbed.h"
-#include "mbed_config.h"
-#include "FATFileSystem.h"
+#include "LittleFileSystem.h"
 #include "test_env.h"
-#include "fsfat_debug.h"
-#include "fsfat_test.h"
+#include "fslittle_debug.h"
+#include "fslittle_test.h"
 #include "utest/utest.h"
 #include "unity/unity.h"
 #include "greentea-client/test_env.h"
+#include "FlashIAP.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -76,16 +76,16 @@ using namespace utest::v1;
 /* DEVICE_SPI
  *  This symbol is defined in targets.json if the target has a SPI interface, which is required for SDCard support.
  *
- * MBED_CONF_APP_FSFAT_SDCARD_INSTALLED
+ * MBED_CONF_APP_FSLITTLE_SDCARD_INSTALLED
  *  For testing purposes, an SDCard must be installed on the target for the test cases in this file to succeed.
- *  If the target has an SD card installed then the MBED_CONF_APP_FSFAT_SDCARD_INSTALLED will be generated
+ *  If the target has an SD card installed then the MBED_CONF_APP_FSLITTLE_SDCARD_INSTALLED will be generated
  *  from the mbed_app.json, which includes the line
  *    {
  *    "config": {
  *        "UART_RX": "D0",
  *        <<< lines removed >>>
  *        "DEVICE_SPI": 1,
- *        "MBED_CONF_APP_FSFAT_SDCARD_INSTALLED": 1
+ *        "MBED_CONF_APP_FSLITTLE_SDCARD_INSTALLED": 1
  *      },
  *      <<< lines removed >>>
  */
@@ -94,60 +94,103 @@ using namespace utest::v1;
 //SDBlockDevice sd(MBED_CONF_SD_SPI_MOSI, MBED_CONF_SD_SPI_MISO, MBED_CONF_SD_SPI_CLK, MBED_CONF_SD_SPI_CS);
 
 #include "FlashIAPBlockDevice.h"
+#include "SlicingBlockDevice.h"
 
-FlashIAPBlockDevice sd;
-FATFileSystem fs("sd", &sd);
+FlashIAPBlockDevice *flash_bd;
+SlicingBlockDevice *slice;
+LittleFileSystem fs("sd");
+bool abort_tests = false;
 
-#define FSFAT_BASIC_TEST_        fsfat_basic_test_
-#define FSFAT_BASIC_TEST_00      fsfat_basic_test_00
-#define FSFAT_BASIC_TEST_01      fsfat_basic_test_01
-#define FSFAT_BASIC_TEST_02      fsfat_basic_test_02
-#define FSFAT_BASIC_TEST_03      fsfat_basic_test_03
-#define FSFAT_BASIC_TEST_04      fsfat_basic_test_04
-#define FSFAT_BASIC_TEST_05      fsfat_basic_test_05
-#define FSFAT_BASIC_TEST_06      fsfat_basic_test_06
-#define FSFAT_BASIC_TEST_07      fsfat_basic_test_07
-#define FSFAT_BASIC_TEST_08      fsfat_basic_test_08
-#define FSFAT_BASIC_TEST_09      fsfat_basic_test_09
-#define FSFAT_BASIC_TEST_10      fsfat_basic_test_10
+#define FSLITTLE_BASIC_TEST_        fslittle_basic_test_
+#define FSLITTLE_BASIC_TEST_00      fslittle_basic_test_00
+#define FSLITTLE_BASIC_TEST_01      fslittle_basic_test_01
+#define FSLITTLE_BASIC_TEST_02      fslittle_basic_test_02
+#define FSLITTLE_BASIC_TEST_03      fslittle_basic_test_03
+#define FSLITTLE_BASIC_TEST_04      fslittle_basic_test_04
+#define FSLITTLE_BASIC_TEST_05      fslittle_basic_test_05
+#define FSLITTLE_BASIC_TEST_06      fslittle_basic_test_06
+#define FSLITTLE_BASIC_TEST_07      fslittle_basic_test_07
+#define FSLITTLE_BASIC_TEST_08      fslittle_basic_test_08
+#define FSLITTLE_BASIC_TEST_09      fslittle_basic_test_09
+#define FSLITTLE_BASIC_TEST_10      fslittle_basic_test_10
 
-#define FSFAT_BASIC_MSG_BUF_SIZE              256
-#define FSFAT_BASIC_TEST_05_TEST_STRING   "Hello World!"
+#define FSLITTLE_BASIC_MSG_BUF_SIZE              256
+#define FSLITTLE_BASIC_TEST_05_TEST_STRING   "Hello World!"
 
 static const char *sd_file_path = "/sd/out.txt";
-static const int FSFAT_BASIC_DATA_SIZE = 256;
-static char fsfat_basic_msg_g[FSFAT_BASIC_MSG_BUF_SIZE];
-static char fsfat_basic_buffer[1024];
-static const int FSFAT_BASIC_KIB_RW = 128;
-static Timer fsfat_basic_timer;
-static const char *fsfat_basic_bin_filename = "/sd/testfile.bin";
-static const char *fsfat_basic_bin_filename_test_08 = "testfile.bin";
-static const char *fsfat_basic_bin_filename_test_10 = "0:testfile.bin";
+static const int FSLITTLE_BASIC_DATA_SIZE = 256;
+static char fslittle_basic_msg_g[FSLITTLE_BASIC_MSG_BUF_SIZE];
+static char fslittle_basic_buffer[512];
+static const int FSLITTLE_BASIC_KIB_RW = 16;
+static const int MAX_TEST_SIZE = FSLITTLE_BASIC_KIB_RW * 1024 * 2;
+static Timer fslittle_basic_timer;
+static const char *fslittle_basic_bin_filename = "/sd/testfile.bin";
+static const char *fslittle_basic_bin_filename_test_08 = "testfile.bin";
+static const char *fslittle_basic_bin_filename_test_10 = "0:testfile.bin";
 
-#define FSFAT_BASIC_MSG(_buf, _max_len, _fmt, ...)   \
+#define FSLITTLE_BASIC_MSG(_buf, _max_len, _fmt, ...)   \
   do                                                            \
   {                                                             \
       snprintf((_buf), (_max_len), (_fmt), __VA_ARGS__);        \
   }while(0);
 
+// Align a value to a specified size.
+// Parameters :
+// val           - [IN]   Value.
+// size          - [IN]   Size.
+// Return        : Aligned value.
+static inline uint32_t align_up(uint32_t val, uint32_t size)
+{
+    return (((val - 1) / size) + 1) * size;
+}
+
 /** @brief  test for operation of SDFileSystem::format()
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-control_t fsfat_basic_test_(const size_t call_count)
+void fslittle_basic_test_()
 {
 
-    FSFAT_FENTRYLOG("%s:entered\n", __func__);
-    (void) call_count;
+    FSLITTLE_FENTRYLOG("%s:entered\n", __func__);
     int32_t ret = -1;
 
-    /* the allocation_unit of 0 means chanFS will use the default for the card (varies according to capacity). */
-    fs.unmount();
-    ret = fs.format(&sd);
-    FSFAT_TEST_UTEST_MESSAGE(fsfat_basic_msg_g, FSFAT_UTEST_MSG_BUF_SIZE, "%s:Error: failed to format sdcard (ret=%d)\n", __func__, (int) ret);
-    TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
-    fs.mount(&sd);
-    return CaseNext;
+    FlashIAP flash;
+    ret = flash.init();
+    TEST_ASSERT_EQUAL(0, ret);
+
+    uint32_t code_end_address = FLASHIAP_ROM_END - flash.get_flash_start();
+    bd_addr_t code_end_offset = align_up(code_end_address, flash.get_sector_size(code_end_address));
+
+    ret = flash.deinit();
+    TEST_ASSERT_EQUAL(0, ret);
+
+    flash_bd = new FlashIAPBlockDevice();
+    ret = flash_bd->init();
+    TEST_ASSERT_EQUAL(0, ret);
+
+    // Use slice of last sectors
+    bd_addr_t slice_addr = flash_bd->size();
+    bd_size_t slice_size = 0;
+    while (slice_size < MAX_TEST_SIZE) {
+        bd_size_t unit_size = flash_bd->get_erase_size(slice_addr - 1);
+        slice_addr -= unit_size;
+        slice_size += unit_size;
+    }
+
+    if (slice_addr < code_end_offset) {
+        abort_tests = true;
+    }
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
+    slice = new SlicingBlockDevice(flash_bd, slice_addr);
+    slice->init();
+
+    ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
+    fs.mount(slice);
+
 }
 
 /** @brief  fopen test case
@@ -161,37 +204,44 @@ control_t fsfat_basic_test_(const size_t call_count)
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_00()
+static void fslittle_basic_test_00()
 {
-    uint8_t data_written[FSFAT_BASIC_DATA_SIZE] = { 0 };
+    uint8_t data_written[FSLITTLE_BASIC_DATA_SIZE] = { 0 };
     bool read_result = false;
     bool write_result = false;
 
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
+    int ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
+
     // Fill data_written buffer with random data
     // Write these data into the file
-    FSFAT_FENTRYLOG("%s:entered\n", __func__);
+    FSLITTLE_FENTRYLOG("%s:entered\n", __func__);
     {
-        FSFAT_DBGLOG("%s:SD: Writing ... ", __func__);
+        FSLITTLE_DBGLOG("%s:SD: Writing ... ", __func__);
         FILE *f = fopen(sd_file_path, "w");
         if (f) {
-            for (int i = 0; i < FSFAT_BASIC_DATA_SIZE; i++) {
+            for (int i = 0; i < FSLITTLE_BASIC_DATA_SIZE; i++) {
                 data_written[i] = rand() % 0XFF;
                 fprintf(f, "%c", data_written[i]);
             }
             write_result = true;
             fclose(f);
         }
-        FSFAT_DBGLOG("[%s]\n", write_result ? "OK" : "FAIL");
+        FSLITTLE_DBGLOG("[%s]\n", write_result ? "OK" : "FAIL");
     }
     TEST_ASSERT_MESSAGE(write_result == true, "Error: write_result is set to false.");
 
     // Read back the data from the file and store them in data_read
     {
-        FSFAT_DBGLOG("%s:SD: Reading data ... ", __func__);
+        FSLITTLE_DBGLOG("%s:SD: Reading data ... ", __func__);
         FILE *f = fopen(sd_file_path, "r");
         if (f) {
             read_result = true;
-            for (int i = 0; i < FSFAT_BASIC_DATA_SIZE; i++) {
+            for (int i = 0; i < FSLITTLE_BASIC_DATA_SIZE; i++) {
                 uint8_t data = fgetc(f);
                 if (data != data_written[i]) {
                     read_result = false;
@@ -200,10 +250,9 @@ static control_t fsfat_basic_test_00()
             }
             fclose(f);
         }
-        FSFAT_DBGLOG("[%s]\n", read_result ? "OK" : "FAIL");
+        FSLITTLE_DBGLOG("[%s]\n", read_result ? "OK" : "FAIL");
     }
     TEST_ASSERT_MESSAGE(read_result == true, "Error: read_result is set to false.");
-    return CaseNext;
 }
 
 
@@ -211,18 +260,26 @@ static control_t fsfat_basic_test_00()
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_01()
+static void fslittle_basic_test_01()
 {
     FILE *fp, *fp1;
     int i, j;
     int ret = 0;
 
-    FSFAT_FENTRYLOG("%s:entered\n", __func__);
+    FSLITTLE_FENTRYLOG("%s:entered\n", __func__);
+
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
+    ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
+
     fp = fopen (sd_file_path, "w+");
     if (fp == NULL) {
-        FSFAT_DBGLOG("errno=%d\n", errno);
+        FSLITTLE_DBGLOG("errno=%d\n", errno);
         TEST_ASSERT_MESSAGE(false, "error");
-        return CaseNext;
+        return;
     }
 
     for (i = 0; i < 256; i++) {
@@ -235,38 +292,44 @@ static control_t fsfat_basic_test_01()
     TEST_ASSERT_MESSAGE(fp1 == fp, "Error: cannot open file for reading");
 
     for (i = 1; i <= 255; i++) {
-        ret = fseek (fp, (long) -i, SEEK_END);
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s:Error: fseek() failed (ret=%d).\n", __func__, (int) ret);
-        TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+        ret = fseek (fp, (long) - i, SEEK_END);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s:Error: fseek() failed (ret=%d).\n", __func__,
+                           (int) ret);
+        TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
         if ((j = getc (fp)) != 256 - i) {
-            FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: SEEK_END failed (j=%d)\n",  __func__, j);
-            TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
+            FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: SEEK_END failed (j=%d)\n",  __func__,
+                               j);
+            TEST_ASSERT_MESSAGE(false, fslittle_basic_msg_g);
         }
         ret = fseek (fp, (long) i, SEEK_SET);
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (ret=%d).\n", __func__, (int) ret);
-        TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (ret=%d).\n",
+                           __func__, (int) ret);
+        TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
         if ((j = getc (fp)) != i) {
-            FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (j=%d).\n", __func__, j);
-            TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+            FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (j=%d).\n", __func__,
+                               j);
+            TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
         }
         if ((ret = fseek (fp, (long) i, SEEK_SET))) {
-            FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (ret=%d).\n", __func__, (int) ret);
-            TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+            FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_SET (ret=%d).\n",
+                               __func__, (int) ret);
+            TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
         }
         if ((ret = fseek (fp, (long) (i >= 128 ? -128 : 128), SEEK_CUR))) {
-            FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_CUR (ret=%d).\n", __func__, (int) ret);
-            TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+            FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_CUR (ret=%d).\n",
+                               __func__, (int) ret);
+            TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
         }
         if ((j = getc (fp)) != (i >= 128 ? i - 128 : i + 128)) {
-            FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_CUR (j=%d).\n", __func__, j);
-            TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+            FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot SEEK_CUR (j=%d).\n", __func__,
+                               j);
+            TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
         }
     }
     fclose (fp);
     remove(sd_file_path);
-    return CaseNext;
 }
 
 
@@ -276,7 +339,7 @@ static control_t fsfat_basic_test_01()
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_02()
+static void fslittle_basic_test_02()
 {
     static const char hello[] = "Hello, world.\n";
     static const char replace[] = "Hewwo, world.\n";
@@ -288,50 +351,59 @@ static control_t fsfat_basic_test_02()
     int32_t ret = 0;
     char *rets = NULL;
 
-    FSFAT_FENTRYLOG("%s:entered\n", __func__);
+    FSLITTLE_FENTRYLOG("%s:entered\n", __func__);
+
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
+
+    ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g)
+
     f = fopen(filename, "w+");
     if (f == NULL) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Cannot open file for writing (filename=%s).\n", __func__, filename);
-        TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE,
+                           "%s: Error: Cannot open file for writing (filename=%s).\n", __func__, filename);
+        TEST_ASSERT_MESSAGE(false, fslittle_basic_msg_g);
     }
 
     ret = fputs(hello, f);
     if (ret == EOF) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fputs() failed to write string to file (filename=%s, string=%s).\n", __func__, filename, hello);
-        TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE,
+                           "%s: Error: fputs() failed to write string to file (filename=%s, string=%s).\n", __func__, filename, hello);
+        TEST_ASSERT_MESSAGE(false, fslittle_basic_msg_g);
     }
 
     rewind(f);
     rets = fgets(buf, sizeof(buf), f);
     if (rets == NULL) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fgets() failed to get string from file (filename=%s).\n", __func__, filename);
-        TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE,
+                           "%s: Error: fgets() failed to get string from file (filename=%s).\n", __func__, filename);
+        TEST_ASSERT_MESSAGE(false, fslittle_basic_msg_g);
     }
     rets = NULL;
 
     rewind(f);
     ret = fputs(buf, f);
     if (ret == EOF) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fputs() failed to write string to file (filename=%s, string=%s).\n", __func__, filename, buf);
-        TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE,
+                           "%s: Error: fputs() failed to write string to file (filename=%s, string=%s).\n", __func__, filename, buf);
+        TEST_ASSERT_MESSAGE(false, fslittle_basic_msg_g);
     }
 
     rewind(f);
     {
         register size_t i;
-        for (i = 0; i < replace_from; ++i)
-        {
+        for (i = 0; i < replace_from; ++i) {
             int c = getc(f);
-            if (c == EOF)
-            {
-                FSFAT_DBGLOG("EOF at %u.\n", i);
+            if (c == EOF) {
+                FSLITTLE_DBGLOG("EOF at %u.\n", i);
                 lose = 1;
                 break;
-            }
-            else if (c != hello[i])
-            {
-                FSFAT_DBGLOG("Got '%c' instead of '%c' at %u.\n",
-                (unsigned char) c, hello[i], i);
+            } else if (c != hello[i]) {
+                FSLITTLE_DBGLOG("Got '%c' instead of '%c' at %u.\n",
+                                (unsigned char) c, hello[i], i);
                 lose = 1;
                 break;
             }
@@ -340,56 +412,47 @@ static control_t fsfat_basic_test_02()
     /* WARNING: printf("%s: here1. (lose = %d)\n", __func__, lose); */
     {
         long int where = ftell(f);
-        if (where == replace_from)
-        {
+        if (where == replace_from) {
             register size_t i;
             for (i = replace_from; i < replace_to; ++i) {
                 if (putc(replace[i], f) == EOF) {
-                    FSFAT_DBGLOG("putc('%c') got %s at %u.\n",
-                    replace[i], strerror(errno), i);
+                    FSLITTLE_DBGLOG("putc('%c') got %s at %u.\n",
+                                    replace[i], strerror(errno), i);
                     lose = 1;
                     break;
                 }
                 /* WARNING: The problem seems to be that putc() is not writing the 'w' chars into the file
-                 * FSFAT_DBGLOG("%s: here1.5. (char = %c, char as int=%d, ret=%d) \n", __func__, replace[i], (int) replace[i], ret);
+                 * FSLITTLE_DBGLOG("%s: here1.5. (char = %c, char as int=%d, ret=%d) \n", __func__, replace[i], (int) replace[i], ret);
                  */
             }
-        }
-        else if (where == -1L)
-        {
-            FSFAT_DBGLOG("ftell got %s (should be at %u).\n",
-            strerror(errno), replace_from);
+        } else if (where == -1L) {
+            FSLITTLE_DBGLOG("ftell got %s (should be at %u).\n",
+                            strerror(errno), replace_from);
             lose = 1;
-        }
-        else
-        {
-            FSFAT_DBGLOG("ftell returns %ld; should be %u.\n", where, replace_from);
+        } else {
+            FSLITTLE_DBGLOG("ftell returns %ld; should be %u.\n", where, replace_from);
             lose = 1;
         }
     }
 
-    if (!lose)
-    {
+    if (!lose) {
         rewind(f);
         memset(buf, 0, BUFSIZ);
-        if (fgets(buf, sizeof(buf), f) == NULL)
-        {
-            FSFAT_DBGLOG("fgets got %s.\n", strerror(errno));
+        if (fgets(buf, sizeof(buf), f) == NULL) {
+            FSLITTLE_DBGLOG("fgets got %s.\n", strerror(errno));
             lose = 1;
-        }
-        else if (strcmp(buf, replace))
-        {
-            FSFAT_DBGLOG("Read \"%s\" instead of \"%s\".\n", buf, replace);
+        } else if (strcmp(buf, replace)) {
+            FSLITTLE_DBGLOG("Read \"%s\" instead of \"%s\".\n", buf, replace);
             lose = 1;
         }
     }
 
     if (lose) {
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: Test Failed. Losing file (filename=%s).\n", __func__, filename);
-        TEST_ASSERT_MESSAGE(false, fsfat_basic_msg_g);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE,
+                           "%s: Error: Test Failed. Losing file (filename=%s).\n", __func__, filename);
+        TEST_ASSERT_MESSAGE(false, fslittle_basic_msg_g);
     }
     remove(filename);
-    return CaseNext;
 }
 
 /** @brief  temptest.c test ported from glibc project. See the licence at REF_LICENCE_GLIBC.
@@ -398,24 +461,27 @@ static control_t fsfat_basic_test_02()
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_03()
+static void fslittle_basic_test_03()
 {
     char *fn = NULL;
 
-    FSFAT_FENTRYLOG("%s:entered\n", __func__);
+    FSLITTLE_FENTRYLOG("%s:entered\n", __func__);
+
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
     fn = tmpnam((char *) NULL);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: appeared to generate a filename when function is not implemented.\n", __func__);
-    TEST_ASSERT_MESSAGE(fn == NULL, fsfat_basic_msg_g);
-    return CaseNext;
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE,
+                       "%s: Error: appeared to generate a filename when function is not implemented.\n", __func__);
+    TEST_ASSERT_MESSAGE(fn == NULL, fslittle_basic_msg_g);
 }
 
 
-static bool fsfat_basic_fileno_check(const char *name, FILE *stream, int fd)
+static bool fslittle_basic_fileno_check(const char *name, FILE *stream, int fd)
 {
     /* ARMCC stdio.h currently does not define fileno() */
 #ifndef __ARMCC_VERSION
     int sfd = fileno (stream);
-    FSFAT_DBGLOG("(fileno (%s) = %d) %c= %d\n", name, sfd, sfd == fd ? '=' : '!', fd);
+    FSLITTLE_DBGLOG("(fileno (%s) = %d) %c= %d\n", name, sfd, sfd == fd ? '=' : '!', fd);
 
     if (sfd == fd) {
         return true;
@@ -449,24 +515,31 @@ static bool fsfat_basic_fileno_check(const char *name, FILE *stream, int fd)
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_04()
+static void fslittle_basic_test_04()
 {
     /* ARMCC stdio.h currently does not define fileno() */
 #ifndef __ARMCC_VERSION
+
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
     int ret = -1;
-    ret = fsfat_basic_fileno_check("stdin", stdin, STDIN_FILENO);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: stdin does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stdin, fileno(stdin));
-    TEST_ASSERT_MESSAGE(ret == true, fsfat_basic_msg_g);
+    ret = fslittle_basic_fileno_check("stdin", stdin, STDIN_FILENO);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE,
+                       "%s: Error: stdin does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stdin, fileno(stdin));
+    TEST_ASSERT_MESSAGE(ret == true, fslittle_basic_msg_g);
 
-    ret = fsfat_basic_fileno_check("stdout", stdout, STDOUT_FILENO);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: stdout does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stdout, fileno(stdout));
-    TEST_ASSERT_MESSAGE(ret == true, fsfat_basic_msg_g);
+    ret = fslittle_basic_fileno_check("stdout", stdout, STDOUT_FILENO);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE,
+                       "%s: Error: stdout does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stdout,
+                       fileno(stdout));
+    TEST_ASSERT_MESSAGE(ret == true, fslittle_basic_msg_g);
 
-    ret = fsfat_basic_fileno_check("stderr", stderr, STDERR_FILENO);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: stderr does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stderr, fileno(stderr));
-    TEST_ASSERT_MESSAGE(ret == true, fsfat_basic_msg_g);
+    ret = fslittle_basic_fileno_check("stderr", stderr, STDERR_FILENO);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE,
+                       "%s: Error: stderr does not have expected file number (expected=%d, fileno=%d.\n", __func__, (int) stderr,
+                       fileno(stderr));
+    TEST_ASSERT_MESSAGE(ret == true, fslittle_basic_msg_g);
 #endif  /* __ARMCC_VERSION */
-    return CaseNext;
 }
 
 
@@ -476,41 +549,53 @@ static control_t fsfat_basic_test_04()
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_05()
+static void fslittle_basic_test_05()
 {
     FILE *f;
-    const char *str = FSFAT_BASIC_TEST_05_TEST_STRING;
+    const char *str = FSLITTLE_BASIC_TEST_05_TEST_STRING;
     int ret = 0;
 
-    FSFAT_DBGLOG("%s:Write files\n", __func__);
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
+    ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
+
+    FSLITTLE_DBGLOG("%s:Write files\n", __func__);
     char filename[32];
     for (int i = 0; i < 10; i++) {
         sprintf(filename, "/sd/test_%d.txt", i);
-        FSFAT_DBGLOG("Creating file: %s\n", filename);
+        FSLITTLE_DBGLOG("Creating file: %s\n", filename);
+
         f = fopen(filename, "w");
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fopen() failed.\n", __func__);
-        TEST_ASSERT_MESSAGE(f != NULL, fsfat_basic_msg_g);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: fopen() failed.\n", __func__);
+        TEST_ASSERT_MESSAGE(f != NULL, fslittle_basic_msg_g);
 
         ret = fprintf(f, str);
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: writing file.\n", __func__);
-        TEST_ASSERT_MESSAGE(ret == (int) strlen(str), fsfat_basic_msg_g);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: writing file.\n", __func__);
+        TEST_ASSERT_MESSAGE(ret == (int) strlen(str), fslittle_basic_msg_g);
 
         ret = fclose(f);
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fclose() failed.\n", __func__);
-        TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: fclose() failed.\n", __func__);
+        TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
+
+        ret = remove(filename);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: remove() failed.\n", __func__);
+        TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
     }
 
-    FSFAT_DBGLOG("%s:List files:\n", __func__);
+    FSLITTLE_DBGLOG("%s:List files:\n", __func__);
     DIR *d = opendir("/sd");
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: opendir() failed.\n", __func__);
-    TEST_ASSERT_MESSAGE(d != NULL, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: opendir() failed.\n", __func__);
+    TEST_ASSERT_MESSAGE(d != NULL, fslittle_basic_msg_g);
 
     struct dirent *p;
-    while ((p = readdir(d)) != NULL)
-        FSFAT_DBGLOG("%s\n", p->d_name);
+    while ((p = readdir(d)) != NULL) {
+        FSLITTLE_DBGLOG("%s\n", p->d_name);
+    }
     closedir(d);
 
-    return CaseNext;
 }
 
 
@@ -520,43 +605,50 @@ static control_t fsfat_basic_test_05()
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_06()
+static void fslittle_basic_test_06()
 {
     int ret = -1;
     char mac[16];
+
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
     mbed_mac_address(mac);
-    FSFAT_DBGLOG("mac address: %02x,%02x,%02x,%02x,%02x,%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+    FSLITTLE_DBGLOG("mac address: %02x,%02x,%02x,%02x,%02x,%02x\n", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+
+    ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
     FILE *f;
-    const char *str = FSFAT_BASIC_TEST_05_TEST_STRING;
-    int str_len = strlen(FSFAT_BASIC_TEST_05_TEST_STRING);
+    const char *str = FSLITTLE_BASIC_TEST_05_TEST_STRING;
+    int str_len = strlen(FSLITTLE_BASIC_TEST_05_TEST_STRING);
 
     f = fopen(sd_file_path, "w");
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fopen() failed.\n", __func__);
-    TEST_ASSERT_MESSAGE(f != NULL, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: fopen() failed.\n", __func__);
+    TEST_ASSERT_MESSAGE(f != NULL, fslittle_basic_msg_g);
 
     ret = fprintf(f, str);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: writing file.\n", __func__);
-    TEST_ASSERT_MESSAGE(ret == (int) strlen(str), fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: writing file.\n", __func__);
+    TEST_ASSERT_MESSAGE(ret == (int) strlen(str), fslittle_basic_msg_g);
 
     ret = fclose(f);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fclose() failed.\n", __func__);
-    TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: fclose() failed.\n", __func__);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
     // Read
     f = fopen(sd_file_path, "r");
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fopen() failed.\n", __func__);
-    TEST_ASSERT_MESSAGE(f != NULL, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: fopen() failed.\n", __func__);
+    TEST_ASSERT_MESSAGE(f != NULL, fslittle_basic_msg_g);
 
-    int n = fread(fsfat_basic_buffer, sizeof(unsigned char), str_len, f);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fread() failed.\n", __func__);
-    TEST_ASSERT_MESSAGE(n == str_len, fsfat_basic_msg_g);
+    int n = fread(fslittle_basic_buffer, sizeof(unsigned char), str_len, f);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: fread() failed.\n", __func__);
+    TEST_ASSERT_MESSAGE(n == str_len, fslittle_basic_msg_g);
 
     ret = fclose(f);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: fclose() failed.\n", __func__);
-    TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: fclose() failed.\n", __func__);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
-    return CaseNext;
 }
 
 
@@ -566,37 +658,45 @@ static control_t fsfat_basic_test_06()
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_07()
+static void fslittle_basic_test_07()
 {
-    uint8_t data_written[FSFAT_BASIC_DATA_SIZE] = { 0 };
+    uint8_t data_written[FSLITTLE_BASIC_DATA_SIZE] = { 0 };
+
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
+    int ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
     // Fill data_written buffer with random data
     // Write these data into the file
     bool write_result = false;
     {
-        FSFAT_DBGLOG("%s:SD: Writing ... ", __func__);
+        FSLITTLE_DBGLOG("%s:SD: Writing ... ", __func__);
         FILE *f = fopen(sd_file_path, "w");
         if (f) {
-            for (int i = 0; i < FSFAT_BASIC_DATA_SIZE; i++) {
+            for (int i = 0; i < FSLITTLE_BASIC_DATA_SIZE; i++) {
                 data_written[i] = rand() % 0XFF;
                 fprintf(f, "%c", data_written[i]);
             }
             write_result = true;
             fclose(f);
         }
-        FSFAT_DBGLOG("[%s]\n", write_result ? "OK" : "FAIL");
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: unexpected write failure.\n", __func__);
-        TEST_ASSERT_MESSAGE(write_result == true, fsfat_basic_msg_g);
+        FSLITTLE_DBGLOG("[%s]\n", write_result ? "OK" : "FAIL");
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: unexpected write failure.\n",
+                           __func__);
+        TEST_ASSERT_MESSAGE(write_result == true, fslittle_basic_msg_g);
     }
 
     // Read back the data from the file and store them in data_read
     bool read_result = false;
     {
-        FSFAT_DBGLOG("%s:SD: Reading data ... ", __func__);
+        FSLITTLE_DBGLOG("%s:SD: Reading data ... ", __func__);
         FILE *f = fopen(sd_file_path, "r");
         if (f) {
             read_result = true;
-            for (int i = 0; i < FSFAT_BASIC_DATA_SIZE; i++) {
+            for (int i = 0; i < FSLITTLE_BASIC_DATA_SIZE; i++) {
                 uint8_t data = fgetc(f);
                 if (data != data_written[i]) {
                     read_result = false;
@@ -605,70 +705,71 @@ static control_t fsfat_basic_test_07()
             }
             fclose(f);
         }
-        FSFAT_DBGLOG("[%s]\n", read_result ? "OK" : "FAIL");
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: unexpected read failure.\n", __func__);
-        TEST_ASSERT_MESSAGE(read_result == true, fsfat_basic_msg_g);
+        FSLITTLE_DBGLOG("[%s]\n", read_result ? "OK" : "FAIL");
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: unexpected read failure.\n",
+                           __func__);
+        TEST_ASSERT_MESSAGE(read_result == true, fslittle_basic_msg_g);
     }
-    return CaseNext;
 }
 
 
-static bool fsfat_basic_test_file_write_fhandle(const char *filename, const int kib_rw)
+static bool fslittle_basic_test_file_write_fhandle(const char *filename, const int kib_rw)
 {
     int ret = -1;
     File file;
 
     ret = file.open(&fs, filename, O_WRONLY | O_CREAT | O_TRUNC);
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
-    TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
     int byte_write = 0;
-    fsfat_basic_timer.start();
+    fslittle_basic_timer.start();
     for (int i = 0; i < kib_rw; i++) {
-        ret = file.write(fsfat_basic_buffer, sizeof(fsfat_basic_buffer));
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to write to file.\n", __func__);
-        TEST_ASSERT_MESSAGE(ret == sizeof(fsfat_basic_buffer), fsfat_basic_msg_g);
+        ret = file.write(fslittle_basic_buffer, sizeof(fslittle_basic_buffer));
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: failed to write to file.\n",
+                           __func__);
+        TEST_ASSERT_MESSAGE(ret == sizeof(fslittle_basic_buffer), fslittle_basic_msg_g);
         byte_write++;
     }
-    fsfat_basic_timer.stop();
+    fslittle_basic_timer.stop();
     file.close();
-#ifdef FSFAT_DEBUG
-    double test_time_sec = fsfat_basic_timer.read_us() / 1000000.0;
+#ifdef FSLITTLE_DEBUG
+    double test_time_sec = fslittle_basic_timer.read_us() / 1000000.0;
     double speed = kib_rw / test_time_sec;
-    FSFAT_DBGLOG("%d KiB write in %.3f sec with speed of %.4f KiB/s\n", byte_write, test_time_sec, speed);
+    FSLITTLE_DBGLOG("%d KiB write in %.3f sec with speed of %.4f KiB/s\n", byte_write, test_time_sec, speed);
 #endif
-    fsfat_basic_timer.reset();
+    fslittle_basic_timer.reset();
     return true;
 }
 
 
-static bool fsfat_basic_test_file_read_fhandle(const char *filename, const int kib_rw)
+static bool fslittle_basic_test_file_read_fhandle(const char *filename, const int kib_rw)
 {
     int ret = -1;
     File file;
     ret = file.open(&fs, filename, O_RDONLY);
 
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
-    TEST_ASSERT_MESSAGE(ret == 0, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
-    fsfat_basic_timer.start();
+    fslittle_basic_timer.start();
     int byte_read = 0;
-    while (file.read(fsfat_basic_buffer, sizeof(fsfat_basic_buffer)) == sizeof(fsfat_basic_buffer)) {
+    while (file.read(fslittle_basic_buffer, sizeof(fslittle_basic_buffer)) == sizeof(fslittle_basic_buffer)) {
         byte_read++;
     }
-    fsfat_basic_timer.stop();
+    fslittle_basic_timer.stop();
     file.close();
-#ifdef FSFAT_DEBUG
-    double test_time_sec = fsfat_basic_timer.read_us() / 1000000.0;
+#ifdef FSLITTLE_DEBUG
+    double test_time_sec = fslittle_basic_timer.read_us() / 1000000.0;
     double speed = kib_rw / test_time_sec;
-    FSFAT_DBGLOG("%d KiB read in %.3f sec with speed of %.4f KiB/s\n", byte_read, test_time_sec, speed);
+    FSLITTLE_DBGLOG("%d KiB read in %.3f sec with speed of %.4f KiB/s\n", byte_read, test_time_sec, speed);
 #endif
-    fsfat_basic_timer.reset();
+    fslittle_basic_timer.reset();
     return true;
 }
 
 
-static char fsfat_basic_test_random_char()
+static char fslittle_basic_test_random_char()
 {
     return rand() % 100;
 }
@@ -680,85 +781,93 @@ static char fsfat_basic_test_random_char()
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_08()
+static void fslittle_basic_test_08()
 {
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
     // Test header
-    FSFAT_DBGLOG("\n%s:SD Card FileHandle Performance Test\n", __func__);
-    FSFAT_DBGLOG("File name: %s\n", fsfat_basic_bin_filename);
-    FSFAT_DBGLOG("Buffer size: %d KiB\n", (FSFAT_BASIC_KIB_RW * sizeof(fsfat_basic_buffer)) / 1024);
+    FSLITTLE_DBGLOG("\n%s:SD Card FileHandle Performance Test\n", __func__);
+    FSLITTLE_DBGLOG("File name: %s\n", fslittle_basic_bin_filename);
+    FSLITTLE_DBGLOG("Buffer size: %d KiB\n", (FSLITTLE_BASIC_KIB_RW * sizeof(fslittle_basic_buffer)) / 1024);
+
+    int ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
     // Initialize buffer
     srand(0);
-    char *buffer_end = fsfat_basic_buffer + sizeof(fsfat_basic_buffer);
-    std::generate (fsfat_basic_buffer, buffer_end, fsfat_basic_test_random_char);
+    char *buffer_end = fslittle_basic_buffer + sizeof(fslittle_basic_buffer);
+    std::generate (fslittle_basic_buffer, buffer_end, fslittle_basic_test_random_char);
 
     bool result = true;
     for (;;) {
-        FSFAT_DBGLOG("%s:Write test...\n", __func__);
-        if (fsfat_basic_test_file_write_fhandle(fsfat_basic_bin_filename_test_08, FSFAT_BASIC_KIB_RW) == false) {
+        FSLITTLE_DBGLOG("%s:Write test...\n", __func__);
+        if (fslittle_basic_test_file_write_fhandle(fslittle_basic_bin_filename_test_08, FSLITTLE_BASIC_KIB_RW) == false) {
             result = false;
             break;
         }
 
-        FSFAT_DBGLOG("%s:Read test...\n", __func__);
-        if (fsfat_basic_test_file_read_fhandle(fsfat_basic_bin_filename_test_08, FSFAT_BASIC_KIB_RW) == false) {
+        FSLITTLE_DBGLOG("%s:Read test...\n", __func__);
+        if (fslittle_basic_test_file_read_fhandle(fslittle_basic_bin_filename_test_08, FSLITTLE_BASIC_KIB_RW) == false) {
             result = false;
             break;
         }
         break;
     }
     TEST_ASSERT_MESSAGE(result == true, "something went wrong");
-    return CaseNext;
 }
 
 
-bool fsfat_basic_test_sf_file_write_stdio(const char *filename, const int kib_rw)
+bool fslittle_basic_test_sf_file_write_stdio(const char *filename, const int kib_rw)
 {
     int ret = -1;
-    FILE* file = fopen(filename, "w");
+    FILE *file = fopen(filename, "w");
 
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
-    TEST_ASSERT_MESSAGE(file != NULL, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
+    TEST_ASSERT_MESSAGE(file != NULL, fslittle_basic_msg_g);
 
     int byte_write = 0;
-    fsfat_basic_timer.start();
+    fslittle_basic_timer.start();
     for (int i = 0; i < kib_rw; i++) {
-        ret = fwrite(fsfat_basic_buffer, sizeof(char), sizeof(fsfat_basic_buffer), file);
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to write to file.\n", __func__);
-        TEST_ASSERT_MESSAGE(ret == sizeof(fsfat_basic_buffer), fsfat_basic_msg_g);
+        ret = fwrite(fslittle_basic_buffer, sizeof(char), sizeof(fslittle_basic_buffer), file);
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: failed to write to file.\n",
+                           __func__);
+        TEST_ASSERT_MESSAGE(ret == sizeof(fslittle_basic_buffer), fslittle_basic_msg_g);
         byte_write++;
     }
-    fsfat_basic_timer.stop();
+    fslittle_basic_timer.stop();
     fclose(file);
-#ifdef FSFAT_DEBUG
-    double test_time_sec = fsfat_basic_timer.read_us() / 1000000.0;
+#ifdef FSLITTLE_DEBUG
+    double test_time_sec = fslittle_basic_timer.read_us() / 1000000.0;
     double speed = kib_rw / test_time_sec;
-    FSFAT_DBGLOG("%d KiB write in %.3f sec with speed of %.4f KiB/s\n", byte_write, test_time_sec, speed);
+    FSLITTLE_DBGLOG("%d KiB write in %.3f sec with speed of %.4f KiB/s\n", byte_write, test_time_sec, speed);
 #endif
-    fsfat_basic_timer.reset();
+    fslittle_basic_timer.reset();
     return true;
 }
 
 
-bool fsfat_basic_test_sf_file_read_stdio(const char *filename, const int kib_rw)
+bool fslittle_basic_test_sf_file_read_stdio(const char *filename, const int kib_rw)
 {
-    FILE* file = fopen(filename, "r");
+    FILE *file = fopen(filename, "r");
 
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
-    TEST_ASSERT_MESSAGE(file != NULL, fsfat_basic_msg_g);
-    fsfat_basic_timer.start();
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
+    TEST_ASSERT_MESSAGE(file != NULL, fslittle_basic_msg_g);
+    fslittle_basic_timer.start();
     int byte_read = 0;
-    while (fread(fsfat_basic_buffer, sizeof(char), sizeof(fsfat_basic_buffer), file) == sizeof(fsfat_basic_buffer)) {
+    while (fread(fslittle_basic_buffer, sizeof(char), sizeof(fslittle_basic_buffer),
+                 file) == sizeof(fslittle_basic_buffer)) {
         byte_read++;
     }
-    fsfat_basic_timer.stop();
+    fslittle_basic_timer.stop();
     fclose(file);
-#ifdef FSFAT_DEBUG
-    double test_time_sec = fsfat_basic_timer.read_us() / 1000000.0;
+#ifdef FSLITTLE_DEBUG
+    double test_time_sec = fslittle_basic_timer.read_us() / 1000000.0;
     double speed = kib_rw / test_time_sec;
-    FSFAT_DBGLOG("%d KiB read in %.3f sec with speed of %.4f KiB/s\n", byte_read, test_time_sec, speed);
+    FSLITTLE_DBGLOG("%d KiB read in %.3f sec with speed of %.4f KiB/s\n", byte_read, test_time_sec, speed);
 #endif
-    fsfat_basic_timer.reset();
+    fslittle_basic_timer.reset();
     return true;
 }
 
@@ -769,89 +878,96 @@ bool fsfat_basic_test_sf_file_read_stdio(const char *filename, const int kib_rw)
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_09()
+static void fslittle_basic_test_09()
 {
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
     // Test header
-    FSFAT_DBGLOG("\n%s:SD Card Stdio Performance Test\n", __func__);
-    FSFAT_DBGLOG("File name: %s\n", fsfat_basic_bin_filename);
-    FSFAT_DBGLOG("Buffer size: %d KiB\n", (FSFAT_BASIC_KIB_RW * sizeof(fsfat_basic_buffer)) / 1024);
+    FSLITTLE_DBGLOG("\n%s:SD Card Stdio Performance Test\n", __func__);
+    FSLITTLE_DBGLOG("File name: %s\n", fslittle_basic_bin_filename);
+    FSLITTLE_DBGLOG("Buffer size: %d KiB\n", (FSLITTLE_BASIC_KIB_RW * sizeof(fslittle_basic_buffer)) / 1024);
+
+    int ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
     // Initialize buffer
     srand(0);
-    char *buffer_end = fsfat_basic_buffer + sizeof(fsfat_basic_buffer);
-    std::generate (fsfat_basic_buffer, buffer_end, fsfat_basic_test_random_char);
+    char *buffer_end = fslittle_basic_buffer + sizeof(fslittle_basic_buffer);
+    std::generate (fslittle_basic_buffer, buffer_end, fslittle_basic_test_random_char);
 
     bool result = true;
     for (;;) {
-        FSFAT_DBGLOG("%s:Write test...\n", __func__);
-        if (fsfat_basic_test_sf_file_write_stdio(fsfat_basic_bin_filename, FSFAT_BASIC_KIB_RW) == false) {
+        FSLITTLE_DBGLOG("%s:Write test...\n", __func__);
+        if (fslittle_basic_test_sf_file_write_stdio(fslittle_basic_bin_filename, FSLITTLE_BASIC_KIB_RW) == false) {
             result = false;
             break;
         }
 
-        FSFAT_DBGLOG("%s:Read test...\n", __func__);
-        if (fsfat_basic_test_sf_file_read_stdio(fsfat_basic_bin_filename, FSFAT_BASIC_KIB_RW) == false) {
+        FSLITTLE_DBGLOG("%s:Read test...\n", __func__);
+        if (fslittle_basic_test_sf_file_read_stdio(fslittle_basic_bin_filename, FSLITTLE_BASIC_KIB_RW) == false) {
             result = false;
             break;
         }
         break;
     }
     TEST_ASSERT_MESSAGE(result == true, "Expected true result not found");
-    return CaseNext;
 }
 
 
-bool fsfat_basic_test_file_write_fatfs(const char *filename, const int kib_rw)
+bool fslittle_basic_test_file_write_littlefs(const char *filename, const int kib_rw)
 {
-    FIL file;
-    FRESULT res = f_open(&file, filename, FA_WRITE | FA_CREATE_ALWAYS);
+    File file;
+    int res = file.open(&fs, filename, O_CREAT | O_WRONLY);
 
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
-    TEST_ASSERT_MESSAGE(res == FR_OK, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
+    TEST_ASSERT_MESSAGE(res == 0, fslittle_basic_msg_g);
 
     int byte_write = 0;
     unsigned int bytes = 0;
-    fsfat_basic_timer.start();
+    fslittle_basic_timer.start();
     for (int i = 0; i < kib_rw; i++) {
-        res = f_write(&file, fsfat_basic_buffer, sizeof(fsfat_basic_buffer), &bytes);
-        FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to write to file.\n", __func__);
-        TEST_ASSERT_MESSAGE(res == FR_OK, fsfat_basic_msg_g);
+        bytes = file.write(fslittle_basic_buffer, sizeof(fslittle_basic_buffer));
+        FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: failed to write to file.\n",
+                           __func__);
+        TEST_ASSERT_MESSAGE(bytes > 0, fslittle_basic_msg_g);
         byte_write++;
     }
-    fsfat_basic_timer.stop();
-    f_close(&file);
-#ifdef FSFAT_DEBUG
-    double test_time_sec = fsfat_basic_timer.read_us() / 1000000.0;
+    fslittle_basic_timer.stop();
+    file.close();
+#ifdef FSLITTLE_DEBUG
+    double test_time_sec = fslittle_basic_timer.read_us() / 1000000.0;
     double speed = kib_rw / test_time_sec;
-    FSFAT_DBGLOG("%d KiB write in %.3f sec with speed of %.4f KiB/s\n", byte_write, test_time_sec, speed);
+    FSLITTLE_DBGLOG("%d KiB write in %.3f sec with speed of %.4f KiB/s\n", byte_write, test_time_sec, speed);
 #endif
-    fsfat_basic_timer.reset();
+    fslittle_basic_timer.reset();
     return true;
 }
 
-bool fsfat_basic_test_file_read_fatfs(const char *filename, const int kib_rw)
+bool fslittle_basic_test_file_read_littlefs(const char *filename, const int kib_rw)
 {
-    FIL file;
-    FRESULT res = f_open(&file, filename, FA_READ | FA_OPEN_EXISTING);
+    File file;
+    int res = file.open(&fs, filename, O_RDONLY);
 
-    FSFAT_BASIC_MSG(fsfat_basic_msg_g, FSFAT_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
-    TEST_ASSERT_MESSAGE(res == FR_OK, fsfat_basic_msg_g);
+    FSLITTLE_BASIC_MSG(fslittle_basic_msg_g, FSLITTLE_BASIC_MSG_BUF_SIZE, "%s: Error: failed to open file.\n", __func__);
+    TEST_ASSERT_MESSAGE(res == 0, fslittle_basic_msg_g);
 
-    fsfat_basic_timer.start();
+    fslittle_basic_timer.start();
     int byte_read = 0;
     unsigned int bytes = 0;
     do {
-        res = f_read(&file, fsfat_basic_buffer, sizeof(fsfat_basic_buffer), &bytes);
+        bytes = file.read(fslittle_basic_buffer, sizeof(fslittle_basic_buffer));
         byte_read++;
-    } while (res == FR_OK && bytes == sizeof(fsfat_basic_buffer));
-    fsfat_basic_timer.stop();
-    f_close(&file);
-#ifdef FSFAT_DEBUG
-    double test_time_sec = fsfat_basic_timer.read_us() / 1000000.0;
+    } while (res == 0 && bytes == sizeof(fslittle_basic_buffer));
+    fslittle_basic_timer.stop();
+    file.close();
+#ifdef FSLITTLE_DEBUG
+    double test_time_sec = fslittle_basic_timer.read_us() / 1000000.0;
     double speed = kib_rw / test_time_sec;
-    FSFAT_DBGLOG("%d KiB read in %.3f sec with speed of %.4f KiB/s\n", byte_read, test_time_sec, speed);
+    FSLITTLE_DBGLOG("%d KiB read in %.3f sec with speed of %.4f KiB/s\n", byte_read, test_time_sec, speed);
 #endif
-    fsfat_basic_timer.reset();
+    fslittle_basic_timer.reset();
     return true;
 }
 
@@ -861,35 +977,41 @@ bool fsfat_basic_test_file_read_fatfs(const char *filename, const int kib_rw)
  *
  * @return on success returns CaseNext to continue to next test case, otherwise will assert on errors.
  */
-static control_t fsfat_basic_test_10()
+static void fslittle_basic_test_10()
 {
+    TEST_SKIP_UNLESS_MESSAGE(!abort_tests, "Test skipped. Test region overlaps code.");
+
     // Test header
-    FSFAT_DBGLOG("\n%sSD Card FatFS Performance Test\n", __func__);
-    FSFAT_DBGLOG("File name: %s\n", fsfat_basic_bin_filename_test_10);
-    FSFAT_DBGLOG("Buffer size: %d KiB\n", (FSFAT_BASIC_KIB_RW * sizeof(fsfat_basic_buffer)) / 1024);
+    FSLITTLE_DBGLOG("\n%sSD Card FatFS Performance Test\n", __func__);
+    FSLITTLE_DBGLOG("File name: %s\n", fslittle_basic_bin_filename_test_10);
+    FSLITTLE_DBGLOG("Buffer size: %d KiB\n", (FSLITTLE_BASIC_KIB_RW * sizeof(fslittle_basic_buffer)) / 1024);
+
+    int ret = fs.reformat(slice);
+    FSLITTLE_TEST_UTEST_MESSAGE(fslittle_basic_msg_g, FSLITTLE_UTEST_MSG_BUF_SIZE,
+                                "%s:Error: failed to format device (ret=%d)\n", __func__, (int) ret);
+    TEST_ASSERT_MESSAGE(ret == 0, fslittle_basic_msg_g);
 
     // Initialize buffer
     srand(1);
-    char *buffer_end = fsfat_basic_buffer + sizeof(fsfat_basic_buffer);
-    std::generate (fsfat_basic_buffer, buffer_end, fsfat_basic_test_random_char);
+    char *buffer_end = fslittle_basic_buffer + sizeof(fslittle_basic_buffer);
+    std::generate (fslittle_basic_buffer, buffer_end, fslittle_basic_test_random_char);
 
     bool result = true;
     for (;;) {
-        FSFAT_DBGLOG("%s:Write test...\n", __func__);
-        if (fsfat_basic_test_file_write_fatfs(fsfat_basic_bin_filename_test_10, FSFAT_BASIC_KIB_RW) == false) {
+        FSLITTLE_DBGLOG("%s:Write test...\n", __func__);
+        if (fslittle_basic_test_file_write_littlefs(fslittle_basic_bin_filename_test_10, FSLITTLE_BASIC_KIB_RW) == false) {
             result = false;
             break;
         }
 
-        FSFAT_DBGLOG("%s:Read test...\n", __func__);
-        if (fsfat_basic_test_file_read_fatfs(fsfat_basic_bin_filename_test_10, FSFAT_BASIC_KIB_RW) == false) {
+        FSLITTLE_DBGLOG("%s:Read test...\n", __func__);
+        if (fslittle_basic_test_file_read_littlefs(fslittle_basic_bin_filename_test_10, FSLITTLE_BASIC_KIB_RW) == false) {
             result = false;
             break;
         }
         break;
     }
     TEST_ASSERT_MESSAGE(result == true, "Expected true result not found");
-    return CaseNext;
 }
 
 utest::v1::status_t greentea_setup(const size_t number_of_cases)
@@ -899,21 +1021,21 @@ utest::v1::status_t greentea_setup(const size_t number_of_cases)
 }
 
 Case cases[] = {
-           /*          1         2         3         4         5         6        7  */
-           /* 1234567890123456789012345678901234567890123456789012345678901234567890 */
-        Case("FSFAT_BASIC_TEST_  : format() test.", FSFAT_BASIC_TEST_),
-        Case("FSFAT_BASIC_TEST_00: fopen()/fgetc()/fprintf()/fclose() test.", FSFAT_BASIC_TEST_00),
-        Case("FSFAT_BASIC_TEST_01: fopen()/fseek()/fclose() test.", FSFAT_BASIC_TEST_01),
-        /* WARNING: Test case not working but currently not required for PAL support
-         * Case("FSFAT_BASIC_TEST_02: fopen()/fgets()/fputs()/ftell()/rewind()/remove() test.", FSFAT_BASIC_TEST_02) */
-        Case("FSFAT_BASIC_TEST_03: tmpnam() test.", FSFAT_BASIC_TEST_03),
-        Case("FSFAT_BASIC_TEST_04: fileno() test.", FSFAT_BASIC_TEST_04),
-        Case("FSFAT_BASIC_TEST_05: opendir() basic test.", FSFAT_BASIC_TEST_05),
-        Case("FSFAT_BASIC_TEST_06: fread()/fwrite() file to sdcard.", FSFAT_BASIC_TEST_06),
-        Case("FSFAT_BASIC_TEST_07: sdcard fwrite() file test.", FSFAT_BASIC_TEST_07),
-        Case("FSFAT_BASIC_TEST_08: FATFileSystem::read()/write() test.", FSFAT_BASIC_TEST_08),
-        Case("FSFAT_BASIC_TEST_09: POSIX FILE API fread()/fwrite() test.", FSFAT_BASIC_TEST_09),
-        Case("FSFAT_BASIC_TEST_10: ChanFS read()/write()) test.", FSFAT_BASIC_TEST_10),
+    /*          1         2         3         4         5         6        7  */
+    /* 1234567890123456789012345678901234567890123456789012345678901234567890 */
+    Case("FSLITTLE_BASIC_TEST_  : format() test.", FSLITTLE_BASIC_TEST_),
+    Case("FSLITTLE_BASIC_TEST_00: fopen()/fgetc()/fprintf()/fclose() test.", FSLITTLE_BASIC_TEST_00),
+    Case("FSLITTLE_BASIC_TEST_01: fopen()/fseek()/fclose() test.", FSLITTLE_BASIC_TEST_01),
+    /* WARNING: Test case not working but currently not required for PAL support
+     * Case("FSLITTLE_BASIC_TEST_02: fopen()/fgets()/fputs()/ftell()/rewind()/remove() test.", FSLITTLE_BASIC_TEST_02) */
+    Case("FSLITTLE_BASIC_TEST_03: tmpnam() test.", FSLITTLE_BASIC_TEST_03),
+    Case("FSLITTLE_BASIC_TEST_04: fileno() test.", FSLITTLE_BASIC_TEST_04),
+    Case("FSLITTLE_BASIC_TEST_05: opendir() basic test.", FSLITTLE_BASIC_TEST_05),
+    Case("FSLITTLE_BASIC_TEST_06: fread()/fwrite() file to sdcard.", FSLITTLE_BASIC_TEST_06),
+    Case("FSLITTLE_BASIC_TEST_07: sdcard fwrite() file test.", FSLITTLE_BASIC_TEST_07),
+    Case("FSLITTLE_BASIC_TEST_08: FATFileSystem::read()/write() test.", FSLITTLE_BASIC_TEST_08),
+    Case("FSLITTLE_BASIC_TEST_09: POSIX FILE API fread()/fwrite() test.", FSLITTLE_BASIC_TEST_09),
+    Case("FSLITTLE_BASIC_TEST_10: ChanFS read()/write()) test.", FSLITTLE_BASIC_TEST_10),
 };
 
 

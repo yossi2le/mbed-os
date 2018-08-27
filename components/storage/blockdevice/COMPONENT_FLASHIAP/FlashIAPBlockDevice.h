@@ -22,9 +22,11 @@
 #include "BlockDevice.h"
 #include <mbed.h>
 
-/** FlashIAPBlockDevice class
+/** BlockDevice using the FlashIAP API
  *
- *  BlockDevice using the FlashIAP API
+ *  @code
+ *  #include "mbed.h"
+ *  #include "FlashIAPBlockDevice.h"
  *
  */
 class FlashIAPBlockDevice : public BlockDevice {
