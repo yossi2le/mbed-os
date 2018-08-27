@@ -135,7 +135,9 @@ class Resources(object):
 
         # Incremental scan related
         self._label_paths = []
-        self._labels = {"TARGET": [], "TOOLCHAIN": [], "FEATURE": []}
+        self._labels = {
+            "TARGET": [], "TOOLCHAIN": [], "FEATURE": [], "COMPONENT": []
+        }
         self._prefixed_labels = set()
 
         # Path seperator style (defaults to OS-specific seperator)
@@ -227,6 +229,8 @@ class Resources(object):
 
     def add_target_labels(self, target):
         self._add_labels("TARGET", target.labels)
+        self._add_labels("COMPONENT", target.components)
+        self.add_features(target.features)
 
     def add_features(self, features):
         self._add_labels("FEATURE", features)
@@ -421,7 +425,7 @@ class Resources(object):
                     self.add_file_ref(FileType.REPO_DIR, fake_path, dir_path)
 
                 if (any(self._not_current_label(d, t) for t
-                        in ['TARGET', 'TOOLCHAIN', 'FEATURE'])):
+                        in self._labels.keys())):
                     self._label_paths.append((dir_path, base_path, into_path))
                     self.ignore_dir(dir_path)
                     dirs.remove(d)
