@@ -122,8 +122,13 @@ void test_read_write() {
         // Write, sync, and read the block
         printf("test  %0*llx:%llu...\n", addrwidth, block, block_size);
 
+#if COMPONENT_SPIF || COMPONENT_DATAFLASH
+        err = bd->erase(block, block_size);
+        TEST_ASSERT_EQUAL(0, err);
+#else
         err = bd->trim(block, block_size);
         TEST_ASSERT_EQUAL(0, err);
+#endif
 
         err = bd->program(write_block, block, block_size);
         TEST_ASSERT_EQUAL(0, err);

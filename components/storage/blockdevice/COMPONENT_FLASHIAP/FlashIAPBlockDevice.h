@@ -24,10 +24,6 @@
 
 /** BlockDevice using the FlashIAP API
  *
- *  @code
- *  #include "mbed.h"
- *  #include "FlashIAPBlockDevice.h"
- *
  */
 class FlashIAPBlockDevice : public BlockDevice {
 public:
