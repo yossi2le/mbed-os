@@ -17,12 +17,37 @@
  *  This file is part of mbed TLS (https://tls.mbed.org)
  */
 
-#if defined(DEVICE_TRNG)
-#define MBEDTLS_ENTROPY_HARDWARE_ALT
+#include <stddef.h>
+
+#ifdef __cplusplus
+#define EXTERNC extern "C"
+#else
+#define EXTERNC
 #endif
+
+#if defined(DEVICE_TRNG)
+
+#define MBEDTLS_ENTROPY_HARDWARE_ALT
+
+#else
+
+#define MBEDTLS_PLATFORM_NV_SEED_ALT
+#define MBEDTLS_ENTROPY_NV_SEED
+#define MBEDTLS_ENTROPY_C
+#define MBEDTLS_NO_PLATFORM_ENTROPY
+
+EXTERNC int platform_std_nv_seed_read( unsigned char *buf, size_t buf_len );
+EXTERNC int platform_std_nv_seed_write( unsigned char *buf, size_t buf_len );
+
+#define MBEDTLS_PLATFORM_STD_NV_SEED_READ   platform_std_nv_seed_read
+#define MBEDTLS_PLATFORM_STD_NV_SEED_WRITE  platform_std_nv_seed_write
+
+#endif //DEVICE_TRNG
 
 #if defined(MBEDTLS_CONFIG_HW_SUPPORT)
 #include "mbedtls_device.h"
 #endif
 
 #define MBEDTLS_ERR_PLATFORM_HW_FAILED       -0x0080
+
+#undef EXTERNC
