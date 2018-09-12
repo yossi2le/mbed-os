@@ -36,17 +36,20 @@
 * to ensure all characters will be transmitted correctly.
 */
 
+#include <stdio.h>
+#include <stdlib.h>
 #include "greentea-client/test_env.h"
 #include "unity/unity.h"
 #include "utest/utest.h"
-#include "hal/trng_api.h"
 #include "base64b.h"
+#include "entropy.h"
+#include "platform_mbed.h"
 #include "pithy.h"
-#include <stdio.h>
+#include "nvstore.h"
 
-#if !DEVICE_TRNG
-#error [NOT_SUPPORTED] TRNG API not supported for this target
-#endif
+//#if !DEVICE_TRNG
+//#error [NOT_SUPPORTED] TRNG API not supported for this target
+//#endif
 
 #define MSG_VALUE_DUMMY                 "0"
 #define MSG_VALUE_LEN                   64
@@ -66,28 +69,43 @@
 
 using namespace utest::v1;
 
-static int fill_buffer_trng(uint8_t *buffer, trng_t *trng_obj, size_t trng_len)
+int inject_dummy_entropy_seed()
 {
-    size_t temp_size = 0, output_length = 0;
-    int trng_res = 0;
-    uint8_t *temp_in_buf = buffer;
+#if !DEVICE_TRNG
+    uint8_t seed[MBEDTLS_ENTROPY_BLOCK_SIZE];
+    NVStore& nvstore = NVStore::get_instance();
+    int ret = nvstore.reset();
+    TEST_ASSERT_EQUAL_INT(0, ret);
 
-    trng_init(trng_obj);
-    memset(buffer, 0, BUFFER_LEN);
+    unsigned pseed = rand();
 
-    while (true) {
-        trng_res = trng_get_bytes(trng_obj, temp_in_buf, trng_len - temp_size, &output_length);
-        TEST_ASSERT_EQUAL_INT_MESSAGE(0, trng_res, "trng_get_bytes error!");
-        temp_size += output_length;
-        temp_in_buf += output_length;
-        if (temp_size >= trng_len) {
-            break;
-        }
+    // Fill with random sequence
+    srand(pseed);
+    for (uint8_t i_ind = 0; i_ind < MBEDTLS_ENTROPY_BLOCK_SIZE; i_ind++) {
+        seed[i_ind] = 0xff & rand();
     }
 
-    temp_in_buf = NULL;
-    trng_free(trng_obj);
+    return platform_std_nv_seed_write( seed, MBEDTLS_ENTROPY_BLOCK_SIZE );
+
+#else
     return 0;
+#endif
+}
+
+static int fill_buffer_trng(uint8_t *buffer, size_t trng_len)
+{
+    int trng_res = 0;
+
+    mbedtls_entropy_context * entropy = new mbedtls_entropy_context;
+    mbedtls_entropy_init(entropy);
+    memset(buffer, 0, BUFFER_LEN);
+
+    trng_res = mbedtls_entropy_func(entropy, buffer, trng_len);
+
+    mbedtls_entropy_free(entropy);
+    delete entropy;
+
+    return trng_res;
 }
 
 void print_array(uint8_t *buffer, size_t size)
@@ -100,7 +118,6 @@ void print_array(uint8_t *buffer, size_t size)
 
 static void compress_and_compare(char *key, char *value)
 {
-    trng_t trng_obj;
     uint8_t *out_comp_buf, *buffer;
     uint8_t *input_buf, *temp_buf;
     size_t comp_sz = 0;
@@ -131,7 +148,7 @@ static void compress_and_compare(char *key, char *value)
 
     if (strcmp(key, MSG_TRNG_TEST_STEP1) == 0) {
         /*Fill buffer with trng values*/
-        result = fill_buffer_trng(buffer, &trng_obj, BUFFER_LEN);
+        result = fill_buffer_trng(buffer, BUFFER_LEN);
         TEST_ASSERT_EQUAL(0, result);
         memcpy(input_buf, buffer, BUFFER_LEN);
     }
@@ -149,8 +166,8 @@ static void compress_and_compare(char *key, char *value)
         TEST_ASSERT_MESSAGE(comp_sz > BUFFER_LEN,
                         "TRNG_TEST_STEP1: trng_get_bytes was able to compress thus not random");
 
-        /*pithy_Compress will try to compress the random data with a different buffer size*/
-        result = fill_buffer_trng(temp_buf, &trng_obj, TEMP_BUF_SIZE);
+        /*pithy_Compress will try to compress the random data with a different buffer sizem*/
+        result = fill_buffer_trng(temp_buf, TEMP_BUF_SIZE);
         TEST_ASSERT_EQUAL(0, result);
 
         comp_sz = pithy_Compress((char *)temp_buf,
@@ -158,6 +175,7 @@ static void compress_and_compare(char *key, char *value)
                                  (char *)out_comp_buf,
                                  OUT_COMP_BUF_SIZE,
                                  9);
+                                 
         if (comp_sz <= TEMP_BUF_SIZE){
            print_array(temp_buf, TEMP_BUF_SIZE);
         }
@@ -211,6 +229,9 @@ void trng_test()
         memset(value, 0, MSG_VALUE_LEN + 1);
 
         greentea_parse_kv(key, value, MSG_KEY_LEN, MSG_VALUE_LEN);
+
+        int ret = inject_dummy_entropy_seed();
+        TEST_ASSERT_EQUAL_INT(0, ret);
 
         if (strcmp(key, MSG_TRNG_TEST_STEP1) == 0) {
             /*create trng data buffer and try to compress it, store it for later checks*/
