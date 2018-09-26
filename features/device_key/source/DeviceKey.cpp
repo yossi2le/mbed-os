@@ -21,6 +21,8 @@
 #include "trng_api.h"
 #include "mbed_wait_api.h"
 #include "stdlib.h"
+#include "entropy.h"
+#include "platform_mbed.h"
 
 #include <string.h>
 
@@ -234,12 +236,7 @@ finish:
 
 int DeviceKey::generate_key_by_trng(uint32_t *output, size_t size)
 {
-#if defined(DEVICE_TRNG)
-    size_t in_size;
-    size_t ongoing_size;
-    trng_t trng_obj;
     int ret = DEVICEKEY_SUCCESS;
-    unsigned char *pBuffer = (unsigned char *)output;
 
     memset(output, 0, size);
 
@@ -249,31 +246,16 @@ int DeviceKey::generate_key_by_trng(uint32_t *output, size_t size)
         return DEVICEKEY_INVALID_PARAM;
     }
 
-    trng_init(&trng_obj);
+    mbedtls_entropy_context * entropy = new mbedtls_entropy_context;
+    mbedtls_entropy_init(entropy);
+    memset(output, 0, size);
 
-    in_size = size;
-    while (in_size > 0) {
+    ret = mbedtls_entropy_func(entropy, (unsigned char *)output, size);
 
-        ongoing_size = 0;
-        ret = trng_get_bytes(&trng_obj, (unsigned char *)pBuffer, in_size, &ongoing_size);
-        if (0 != ret || ongoing_size > in_size) {
-            ret = DEVICEKEY_TRNG_ERROR;
-            goto finish;
-        }
+    mbedtls_entropy_free(entropy);
+    delete entropy;
 
-        pBuffer += ongoing_size;
-        in_size -= ongoing_size;
-    }
-
-    ret = DEVICEKEY_SUCCESS;
-
-finish:
-    trng_free(&trng_obj);
     return ret;
-
-#else
-    return DEVICEKEY_NO_KEY_INJECTED;
-#endif
 }
 
 } // namespace mbed

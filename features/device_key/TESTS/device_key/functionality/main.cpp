@@ -19,6 +19,8 @@
 #include "unity/unity.h"
 #include "greentea-client/test_env.h"
 #include "nvstore.h"
+#include "entropy.h"
+#include "platform_mbed.h"
 
 #if !NVSTORE_ENABLED
 #error [NOT_SUPPORTED] NVSTORE needs to be enabled for this test
@@ -42,19 +44,24 @@ void generate_derived_key_consistency_16_byte_key_long_consistency_test(char *ke
 void generate_derived_key_consistency_32_byte_key_long_consistency_test(char *key);
 
 /*
- * Injection of a dummy key when there is no TRNG
+ * Injection of a dummy entropy seed if no TRNG
  */
-int inject_dummy_rot_key()
+int inject_dummy_entropy_seed()
 {
-#if !defined(DEVICE_TRNG)
-    uint32_t key[DEVICE_KEY_16BYTE / sizeof(uint32_t)];
+#if !DEVICE_TRNG
+    uint8_t seed[MBEDTLS_ENTROPY_BLOCK_SIZE];
+    unsigned pseed = rand();
 
-    memcpy(key, "1234567812345678", DEVICE_KEY_16BYTE);
-    int size = DEVICE_KEY_16BYTE;
-    DeviceKey& devkey = DeviceKey::get_instance();
-    return devkey.device_inject_root_of_trust(key, size);
+    // Fill with random sequence
+    srand(pseed);
+    for (uint8_t i_ind = 0; i_ind < MBEDTLS_ENTROPY_BLOCK_SIZE; i_ind++) {
+        seed[i_ind] = 0xff & rand();
+    }
+
+    return platform_std_nv_seed_write( seed, MBEDTLS_ENTROPY_BLOCK_SIZE );
+
 #else
-    return DEVICEKEY_SUCCESS;
+    return 0;
 #endif
 }
 
@@ -96,7 +103,7 @@ void generate_derived_key_consistency_16_byte_key_long_consistency_test(char *ke
         int ret = nvstore.reset();
         TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
-        ret = inject_dummy_rot_key();
+        ret = inject_dummy_entropy_seed();
         TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
         memset(output1, 0, sizeof(output1));
@@ -155,7 +162,7 @@ void generate_derived_key_consistency_32_byte_key_long_consistency_test(char *ke
         int ret = nvstore.reset();
         TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
-        ret = inject_dummy_rot_key();
+        ret = inject_dummy_entropy_seed();
         TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
         memset(output1, 0, sizeof(output1));
@@ -304,7 +311,7 @@ void generate_derived_key_consistency_16_byte_key_test()
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
-    ret = inject_dummy_rot_key();
+    ret = inject_dummy_entropy_seed();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
     size_t salt_size = sizeof(salt);
@@ -339,7 +346,7 @@ void generate_derived_key_consistency_32_byte_key_test()
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
-    ret = inject_dummy_rot_key();
+    ret = inject_dummy_entropy_seed();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
     size_t salt_size = sizeof(salt);
@@ -374,7 +381,7 @@ void generate_derived_key_key_type_16_test()
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
-    ret = inject_dummy_rot_key();
+    ret = inject_dummy_entropy_seed();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
     memset(output, 0, DEVICE_KEY_16BYTE * 2);
@@ -405,7 +412,7 @@ void generate_derived_key_key_type_32_test()
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
-    ret = inject_dummy_rot_key();
+    ret = inject_dummy_entropy_seed();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
     memset(output, 0, DEVICE_KEY_32BYTE * 2);
@@ -435,7 +442,7 @@ void generate_derived_key_wrong_key_type_test()
     int ret = nvstore.reset();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
-    ret = inject_dummy_rot_key();
+    ret = inject_dummy_entropy_seed();
     TEST_ASSERT_EQUAL_INT(DEVICEKEY_SUCCESS, ret);
 
     memset(output, 0, DEVICE_KEY_16BYTE);
