@@ -36,6 +36,7 @@
 #define MBEDTLS_ENTROPY_C
 #define MBEDTLS_NO_PLATFORM_ENTROPY
 
+EXTERNC int platform_inject_nv_seed( unsigned char *buf, size_t buf_len );
 EXTERNC int platform_std_nv_seed_read( unsigned char *buf, size_t buf_len );
 EXTERNC int platform_std_nv_seed_write( unsigned char *buf, size_t buf_len );
 
