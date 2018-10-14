@@ -25,37 +25,43 @@
 #endif
 
 #define NVSTORE_DRBG_KEY 5
+#define TEMP_SEED_SIZE 64
 
 //#if defined(MBEDTLS_ENTROPY_NV_SEED) && defined(NVSTORE_ENABLED)
+
+
+EXTERNC int platform_inject_nv_seed( unsigned char *buf, size_t buf_len )
+{
+    //checkout there is no seed
+    unsigned char temp_buf[TEMP_SEED_SIZE];
+    uint16_t out_size = 0;
+
+    NVStore& nvstore = NVStore::get_instance();
+    int ret = nvstore.get(NVSTORE_DRBG_KEY, TEMP_SEED_SIZE, temp_buf, out_size);
+    if (ret == 0 || ret == NVSTORE_BUFF_TOO_SMALL) {
+        return NVSTORE_ALREADY_EXISTS;
+    }
+
+    if (ret != NVSTORE_NOT_FOUND) {
+        return ret;
+    }
+
+    return platform_std_nv_seed_write(buf, buf_len);
+
+}
+
 EXTERNC int platform_std_nv_seed_read( unsigned char *buf, size_t buf_len )
 {
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!platform_std_nv_seed_read entered\n");
     uint16_t in_size = buf_len;
     uint16_t out_size = 0;
     NVStore& nvstore = NVStore::get_instance();
-    int nvStatus = nvstore.get(NVSTORE_DRBG_KEY, in_size, buf, out_size);
-
-    if (NVSTORE_SUCCESS != nvStatus) {
-        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!platform_std_nv_seed_read error\n");
-    }
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!platform_std_nv_seed_read success\n");
-
-    return nvStatus;
+    return nvstore.get(NVSTORE_DRBG_KEY, in_size, buf, out_size);
 }
 
 EXTERNC int platform_std_nv_seed_write( unsigned char *buf, size_t buf_len )
 {
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!platform_std_nv_seed_write entered\n");
     NVStore& nvstore = NVStore::get_instance();
-    int nvStatus = nvstore.set(NVSTORE_DRBG_KEY, (uint16_t)buf_len, buf);
-
-    if (NVSTORE_SUCCESS != nvStatus) {
-        printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!platform_std_nv_seed_write error\n");
-    }
-    printf("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!platform_std_nv_seed_write success\n");
-
-    return nvStatus;
-
+    return nvstore.set(NVSTORE_DRBG_KEY, (uint16_t)buf_len, buf);
 }
 //#endif /* MBEDTLS_ENTROPY_NV_SEED */
 
