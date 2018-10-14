@@ -145,7 +145,7 @@ Pseudo code:
 - if `_is_initialized` return OK
 - Create and take `_mutex`
 - Create the FileSystemStore directory if it doesn't exist
-- Using the FileSystem `dir_size` API, count number of files and store in `_num_keys` 
+- Iterate on all files in this directory using `opendir` and `readdir` APIs, and store number of files in `_num_keys` 
 - Set `_is_initialized` to true
 - Release `_mutex`     
   
@@ -192,10 +192,10 @@ Header:
 
 Pseudo code:  
 - if not `_is_initialized` return "not initialized" error
-- Find file `key` under the FileSystemStore directory. If not existing, return "not found" error
 - Take `_mutex` 
 - Using the `stat` API, extract file size
 - Call `fopen` API on `key`, read mode to achieve a file handle
+- If failed, release `_mutex` and return "not found" error
 - Using `fread` API, read into a `key_metadata_t` structure
 - If file size - metadata size doesn't match `data_size` field in metadata or `magic` has a wrong value, return "data corrupt" error. 
 - Using `fseek` API on file handle, seek to `offset` + metadata size
@@ -215,6 +215,7 @@ Pseudo code:
 - Find file `key` under the FileSystemStore directory. If not existing, return "not found" error.
 - Take `_mutex` 
 - Call `fopen` API on `key`, read mode to achieve a file handle
+- If failed, release `_mutex` and return "not found" error
 - Using `fread` API on file handle, read data into a `key_metadata_t` structure
 - If file size - metadata size doesn't match `data_size` field in metadata or `magic` has a wrong value, return "data corrupt" error. 
 - Fill `info` structure with all relevant fields 

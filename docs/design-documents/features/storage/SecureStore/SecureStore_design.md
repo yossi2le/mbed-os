@@ -45,8 +45,8 @@ SecureStore assumes that the underlying KVStore instances are instantiated and i
 SecureStore is a storage class, derived from KVStore. It adds security features to the underlying key value store.
  
 As such, it offers all KVStore APIs, with additional security options (which can be selected using the creation flags at set). These include:  
-- Encryption: Data is encrypted using the AES-CTR encryption method, where the IV consists of a randomly generated 8-byte nonce and an 8-byte counter. Key is derived from [Device Key](../../../../../../mbed-os/features/device_key/README.md), where salt is the key.  
-- Authentication: A 16-byte CMAC is calculated on all stored data (including metadata) and stored at the end of the record. When reading the record, calculated CMAC is compared with the stored one. In case of encryption, CMAC is calculated on the encrypted data. The key used for generating the CMAC is derived from [Device Key](../../../../../../mbed-os/features/device_key/README.md), where salt is the key.  
+- Encryption: Data is encrypted using the AES-CTR encryption method, where the IV consists of a randomly generated 8-byte nonce and an 8-byte counter. Key is derived from [Device Key](../../../../../../mbed-os/features/device_key/README.md), where salt is the key trimmed to 32 bytes, with "ENC" as prefix.  
+- Authentication: A 16-byte CMAC is calculated on all stored data (including metadata) and stored at the end of the record. When reading the record, calculated CMAC is compared with the stored one. In case of encryption, CMAC is calculated on the encrypted data. The key used for generating the CMAC is derived from [Device Key](../../../../../../mbed-os/features/device_key/README.md), where salt is the key trimmed to 32 bytes, with "AUTH" as prefix.  
 - Rollback protection: (Requires authentication) CMAC is stored in a designated rollback protected storage (also of KVStore type) and compared to when reading the data under the same key.
 - Write once: Key can only be stored once and can't be removed. 
 
@@ -72,7 +72,7 @@ Fields are:
 ### Basic implementation concepts
 
 When setting the data, as the code can't construct a single buffer to store all data (including metadata and possibly encrypted data) in one shot, it will be done in chunks, using the incremental set APIs. As for get, it will use the offset argument to extract metadata, data & CMAC separately.  
-Rollback protection (RBP) keys are stored in the designated rollback protection storage, of KVStore type also. RBP Keys are generated using a 32-bit incremental counter, which is incremented whenever we have a new key. Start value of the counter is achieved by iterating over the rollback protection KVStore (at initialization) and getting the maximal value. 
+Rollback protection (RBP) keys are stored in the designated rollback protection storage, of KVStore type also. RBP keys are the same as the SecureStore keys. 
 
  
 # Detailed design
@@ -216,6 +216,11 @@ Pseudo code:
 - if not `_is_initialized` return error
 - Take `_mutex`
 - Call `_underlying_kv` `get` API with `metadata` size into a `metadata` local structure
+- If failure
+	- If rollback protection flag set
+		- Call `_rbp_kv` `get` API on a local `rbp_cmac` variable, key is `key`, size 16
+		- If no error, return "RBP authentication" error
+	- Return "Key not found error"
 - If authentication flag set
 	- Derive a key from device key and `key`
 	- Allocate and initialize `auth_handle` CMAC calculation local handle with derived key 
@@ -238,8 +243,9 @@ Pseudo code:
 - Call `_underlying_kv` `get` API with on a local `read_cmac` variable, size 16
 - Generate CMAC on local `cmac` variable 
 - If `read_cmac` doesn't match `cmac`, return "data corrupt error"
-- Call `_rbp_kv` `get` API on a local `read_cmac` variable, key is `key`, size 16
-- If `read_cmac` doesn't match `cmac`, return "RBP authentication error"
+- If rollback protection flag set
+	- Call `_rbp_kv` `get` API on a local `rbp_cmac` variable, key is `key`, size 16
+	- If `rbp_cmac` doesn't match `cmac`, clear `buffer` and return "RBP authentication" error
 - Deinitialize and free `auth_handle` and `enc_handle`
 - Release `_mutex`
 - Return OK   
@@ -251,6 +257,8 @@ Header:
 
 Pseudo code:  
 - if not `_is_initialized` return error
+- Call `get` API with `key` and 0 in `buffer_size` parameter
+- If failed, return error code  
 - Call `_underlying_kv` `get` API with `metadata` size and `key`
 - Fill fields in `info` according to `metadata`
 - Return OK   
@@ -285,12 +293,12 @@ Pseudo code:
 	- If key exists, return "already exists" error
 	- Call `_rbp_kv` `get` API with `key` as key. If key exists, return "already exists" error
 - If encrypt flag set
-	- Derive a key from device key and `key` as salt
+	- Derive a key from device key and `key` as salt (trimmed to 32 bytes with "ENC" as prefix)
 	- Using TLS entropy function on `_entropy` handle, randomly generate `nonce` field
 	- Allocate and initialize `enc_handle` AES-CTR handle field with derived key and `nonce` field 
 - Fill all available fields in `metadata` 
 - If authentication flag set
-	- Derive a key from device key and `key` as salt
+	- Derive a key from device key and `key` as salt (trimmed to 32 bytes with "AUTH" as prefix)
 	- Allocate and initialize `auth_handle` CMAC calculation handle field with derived key 
 	- Using `auth_handle` handle, calculate CMAC on `key` & `metadata`
 - Call `_underlying_kv` `set_start` API 	    
