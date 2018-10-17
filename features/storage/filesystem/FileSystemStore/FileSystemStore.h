@@ -34,7 +34,7 @@ enum FSST_bd_error {
     FSST_ERROR_OK               	 = 0,     /*!< no error */
     FSST_ERROR_NOT_INITIALIZED  	 = -1,
     FSST_ERROR_MAX_KEYS_REACHED 	 = -2,
-    FSST_ERROR_FILE_NOT_FOUND		 = -3,
+    FSST_ERROR_NOT_FOUND		     = -3,
     FSST_ERROR_FILE_OPERATION_FAILED = -4,
     FSST_ERROR_INVALID_INPUT		 = -5,
     FSST_ERROR_CORRUPTED_DATA		 = -6,
@@ -72,7 +72,7 @@ public:
  
     // Key iterator
     virtual int iterator_open(iterator_t *it, const char *prefix = NULL);
-    virtual int iterator_next(iterator_t it, char *key, size_t key_size, size_t *actual_key_size);
+    virtual int iterator_next(iterator_t it, char *key, size_t key_size);
     virtual int iterator_close(iterator_t it);
     
 private:
