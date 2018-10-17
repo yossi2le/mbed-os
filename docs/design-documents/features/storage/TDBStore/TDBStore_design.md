@@ -121,7 +121,7 @@ public:
 
     // Core API
     virtual int set(const char *key, const void *buffer, size_t size, uint32_t create_flags);
-    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);
+    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);
     virtual int get_info(const char *key, info_t *info);
     virtual int remove(const char *key);
  
@@ -269,7 +269,7 @@ Pseudo code:
 **get function**
 
 Header:  
-`virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);`
+`virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);`
 
 Pseudo code:  
 - if not `_is_initialized` return "not initialized" error
@@ -278,7 +278,7 @@ Pseudo code:
 - If not found, return "not found" error
 - Read header and calculate CRC on it
 - Update CRC with key (if offset is 0)
-- Read data into user buffer, starting offset. Size is minimum of buffer size and remainder of data
+- Read data into user buffer, starting offset. Actual size is minimum of buffer size and remainder of data
 - If offset is 0
 	- Update CRC with buffer
 	- Compare calculate CRC with header CRC. Return "data corrupt" error if different.

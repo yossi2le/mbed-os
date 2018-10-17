@@ -76,7 +76,7 @@ FileSystemStore has the following header:
 class FileSystemStore : KVStore {
 
 public:
-    FileSystemStore(size_t max_keys);
+    FileSystemStore(FileSystem *fs);
     virtual ~FileSystemStore();
     	 
     // Initialization and reset
@@ -86,7 +86,7 @@ public:
 
     // Core API
     virtual int set(const char *key, const void *buffer, size_t size, uint32_t create_flags);
-    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);
+    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);
     virtual int get_info(const char *key, info_t *info);
     virtual int remove(const char *key);
  
@@ -102,8 +102,7 @@ public:
     
 private:
     Mutex _mutex;
-    size_t *_max_keys;
-    size_t *_num_keys;
+    FileSystem *_fs;
     bool _is_initialized;
 }
 ```
@@ -146,7 +145,6 @@ Pseudo code:
 - if `_is_initialized` return OK
 - Create and take `_mutex`
 - Create the FileSystemStore directory if it doesn't exist
-- Iterate on all files in this directory using `opendir` and `readdir` APIs, and store number of files in `_num_keys` 
 - Set `_is_initialized` to true
 - Release `_mutex`     
   
@@ -189,20 +187,22 @@ Pseudo code:
 **get function**
 
 Header:  
-`virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);`
+`virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);`
 
 Pseudo code:  
 - if not `_is_initialized` return "not initialized" error
 - Take `_mutex` 
 - Using the `stat` API, extract file size
-- Call `fopen` API on `key`, read mode to achieve a file handle
+- Call `_fs` `file_open` API on `key`, read mode to achieve a file handle
 - If failed, release `_mutex` and return "not found" error
-- Using `fread` API, read into a `key_metadata_t` structure
+- Using `_fs` `file_read` API on file handle, read into a `key_metadata_t` structure
+- Call `_fs` `file_seek` API on file handle to end of file
+- Using `_fs` `file_tell` on file handle, achieve file size
 - If file size - metadata size doesn't match `data_size` field in metadata or `magic` has a wrong value, return "data corrupt" error. 
-- Using `fseek` API on file handle, seek to `offset` + metadata size
+- Using `file_seek` API on file handle, seek to `offset` + metadata size
 - Set `actual_size` as the minimum of buffer size and remainder of data
-- Using `fread` API on file handle, read data to `buffer`, size is `actual_size` 
-- Call FileSystem `fclose` API on file handle
+- Using `_fs` `file_read` API on file handle, read data to `buffer`, size is `actual_size` 
+- Call `_fs` `file_close` API on file handle
 - Release `_mutex`  
 - Return OK   
 
@@ -215,12 +215,12 @@ Pseudo code:
 - if not `_is_initialized` return "not initialized" error
 - Find file `key` under the FileSystemStore directory. If not existing, return "not found" error.
 - Take `_mutex` 
-- Call `fopen` API on `key`, read mode to achieve a file handle
+- Call `_fs` `file_open` API on `key`, read mode to achieve a file handle
 - If failed, release `_mutex` and return "not found" error
-- Using `fread` API on file handle, read data into a `key_metadata_t` structure
-- If file size - metadata size doesn't match `data_size` field in metadata or `magic` has a wrong value, return "data corrupt" error. 
+- Using `_fs` `file_read` API on file handle, read data into a `key_metadata_t` structure
+- If (file size - metadata size) doesn't match `data_size` field in metadata or `magic` has a wrong value, return "data corrupt" error. 
 - Fill `info` structure with all relevant fields 
-- Call `fclose` API on file handle
+- Call `_fs` `file_close` API on file handle
 - Release `_mutex`  
 - Return OK   
 
@@ -250,9 +250,9 @@ Pseudo code:
 - Duplicate `key` in `handle`.
 - Update `data_size` and `create_flags` in `handle`
 - Fill `key_metadata_t` structure with all relevant values (`data_size` and `create_flags` from handle)
-- Call `fopen` API on `key`, write mode to achieve a file handle
-- Using `fwrite` API on file handle, write metadata structure to the file
-- Call FileSystem `fclose` API on file handle
+- Call `_fs` `file_open` API on `key`, write mode to achieve a file handle
+- Using `_fs` `file_write` API on file handle, write metadata structure to the file
+- Call `_fs` `file_close` API on file handle
 
 **set_add_data function**
 
@@ -260,9 +260,9 @@ Header:
 `virtual int set_add_data(set_handle_t handle, const void *value_data, size_t data_size);`
 
 Pseudo code:
-- Call FileSystem `fopen` API on `key`, append mode to achieve a file handle
-- Using the FileSystem `fwrite` API on file handle, write `value_data` to the file
-- Call FileSystem `fclose` API on file handle
+- Call `_fs` `file_open` API on `key`, append mode to achieve a file handle
+- Using `_fs` `file_write` API on file handle, write `value_data` to the file
+- Call `_fs` `file_close` API on file handle
 
 **set_finalize function**
 
@@ -284,7 +284,7 @@ Pseudo code:
 - Take `_mutex`  
 - Allocate a `key_iterator_handle_t` structure into `it`
 - Duplicate `prefix` into same field in iterator
-- Using `opendir` API, store dir handle in the handle's `dir_handle` field 
+- Using `_fs` `dir_open` API, store dir handle in the handle's `dir_handle` field 
 - Release `_mutex`
 
 **iterator_next function**
@@ -294,11 +294,11 @@ Header:
 
 Pseudo code:
 - Take `_mutex`  
-- Using the FileSystem `readdir` API on handle's `dir_handle` field, read next file in directory
+- Using `_fs` `dir_read` API on handle's `dir_handle` field, read next file in directory
 - While not reached end of directory
 	- If name matches prefix
 		- Copy file name to `key` and return OK
-	- Using the FileSystem `readdir` API on handle's `dir_handle` field, read next file in directory
+	- Using `_fs` `dir_read` API on handle's `dir_handle` field, read next file in directory
 - Return "not found" error
 - Release `_mutex`
 
@@ -308,7 +308,7 @@ Header:
 `virtual int iterator_close(iterator_t it);`
 
 Pseudo code:
-- Call `closedir` API on `dir_handle`
+- Call `_fs` `dir_close` API on `dir_handle`
 - Release `prefix` field in iterator and structure allocated at `it`
 
 
@@ -322,8 +322,11 @@ Following example code shows standard usage of the FileSystemStore class
 
 ```C++
 
-// Instantiate fsstore with 64 as max number of keys
-FileSystemStore fsstore(64);
+// External file system of LittleFS type. Should be initialized.
+extern LittleFileSystem fs;
+
+// Instantiate fsstore with our file system
+FileSystemStore fsstore(&fs);
 
 int res;
 
@@ -375,4 +378,3 @@ res = fsstore.deinit();
 ### Open issues
 
 - Need to figure a way to prevent mutex abuse in incremental set APIs. 
-- Should we limit number of keys (as current design does) or not?

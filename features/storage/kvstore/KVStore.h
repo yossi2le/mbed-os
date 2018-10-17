@@ -28,11 +28,12 @@ typedef enum {
     KVSTORE_DATA_CORRUPT           = -4,
     KVSTORE_BAD_VALUE              = -5,
     KVSTORE_NO_SPACE_ON_DEVICE     = -6,
-    NVSTORE_OS_ERROR               = -7,
-    NVSTORE_WRITE_ONCE_ERROR       = -8,
-    NVSTORE_AUTH_ERROR             = -9,
-    NVSTORE_RBP_AUTH_ERROR         = -10,
+    KVSTORE_OS_ERROR               = -7,
+    KVSTORE_WRITE_ONCE_ERROR       = -8,
+    KVSTORE_AUTH_ERROR             = -9,
+    KVSTORE_RBP_AUTH_ERROR         = -10,
     KVSTORE_MAX_KEYS_REACHED       = -11,
+    KVSTORE_UNINITIALIZED          = -12,
 } kvstore_status_e;
 
 
@@ -51,7 +52,7 @@ public:
         ROLLBACK_PROTECT_FLAG = (1 << 3),
     };
 
-    static const uint32_t MAX_KEY_LENGTH = 128;
+    static const uint32_t MAX_KEY_SIZE = 128;
 
     typedef struct _opaque_set_handle *set_handle_t;
 
@@ -109,7 +110,7 @@ public:
      *
      * @returns 0 on success or a negative error code on failure
      */
-    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);
+    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);
 
     /**
      * @brief Get information of a given key.
