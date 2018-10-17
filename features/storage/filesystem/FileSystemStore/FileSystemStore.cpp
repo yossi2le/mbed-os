@@ -331,12 +331,14 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
 		return FSST_ERROR_FILE_OPERATION_FAILED;
 	}
 
-	handle = (set_handle_t *) new inc_set_handle_t;
-	handle->create_flags = create_flags;
-    handle->data_size = final_data_size;
-    handle->key = new char[strnlen(key, FSST_MAX_KEY_LEN)];
-    strncpy(handle->key, key, FSST_MAX_KEY_LEN);
-    handle->key[FSST_MAX_KEY_LEN] = '\0';
+	inc_set_handle_t *set_handle = new inc_set_handle_t;
+	set_handle->create_flags = create_flags;
+	set_handle->data_size = final_data_size;
+	set_handle->key = new char[strnlen(key, FSST_MAX_KEY_LEN)];
+    strncpy(set_handle->key, key, FSST_MAX_KEY_LEN);
+    set_handle->key[FSST_MAX_KEY_LEN] = '\0';
+
+    *handle = (set_handle_t *)set_handle;
 
     key_metadata_t key_metadata;
 
@@ -355,7 +357,8 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
 int FileSystemStore::set_add_data(set_handle_t handle, const void *value_data, size_t data_size)
 {
 	char full_path_key[FSST_MAX_KEY_LEN*2+1] = {0};
-	_build_full_path_key(full_path_key, handle->key);
+	inc_set_handle_t *set_handle = (inc_set_handle_t *)handle;
+	_build_full_path_key(full_path_key, set_handle->key);
 
 
 	FILE *output_file = fopen(full_path_key, "r");
@@ -377,33 +380,137 @@ int FileSystemStore::set_add_data(set_handle_t handle, const void *value_data, s
 
 int FileSystemStore::set_finalize(set_handle_t handle)
 {
-	if (handle == NULL) {
+	int status = FSST_ERROR_OK;
+	inc_set_handle_t *set_handle = (inc_set_handle_t *)handle;
+
+	if (set_handle == NULL) {
 		return FSST_ERROR_INVALID_INPUT;
 	}
 
-	if (handle->key == NULL) {
-		return FSST_ERROR_INVALID_INPUT;
+	if (set_handle->key == NULL) {
+		status = FSST_ERROR_INVALID_INPUT;
+	}
+	else {
+		delete set_handle->key;
 	}
 
-	delete handle->key;
-	delete handle;
-	return FSST_ERROR_OK;
+	delete set_handle;
+	return status;
 }
 
 // Key iterator
 int FileSystemStore::iterator_open(iterator_t *it, const char *prefix = NULL)
 {
+    int status = FSST_ERROR_OK;
+    DIR *kv_dir;
+
+	_mutex.lock();
+	if (false == _is_initialized) {
+		status = FSST_ERROR_NOT_INITIALIZED;
+		goto exit_point;
+	}
+    key_iterator_handle_t *key_it = new key_iterator_handle_t;
+
+    key_it->prefix = NULL;
+    if (prefix != NULL) {
+    	key_it->prefix = new char[FSST_MAX_KEY_LEN+1];
+    	strncpy(key_it->prefix, prefix, FSST_MAX_KEY_LEN);
+    	key_it->prefix[FSST_MAX_KEY_LEN] = '\0';
+    }
+
+    kv_dir = opendir(_cfg_fs_path);
+    if (kv_dir == NULL) {
+      tr_error("KV Dir: %s, doesnt exist", _cfg_fs_path); //TBD verify ERRNO NOEXIST
+      status = FSST_ERROR_NOT_FOUND;
+    }
+    key_it->dir_handle = kv_dir;
+
+    *it = (iterator_t)key_it;
+exit_point:
+	_mutex.unlock();
+	return status;
 }
 
-int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size, size_t *actual_key_size)
+
+
+
+
+int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 {
+	DIR *kv_dir;
+	struct dirent *kv_dir_ent;
+	struct stat dir_buf;
+	int kv_dir_ent_valid = 0;
+	int status = FSST_ERROR_NOT_FOUND;
+
+	_mutex.lock();
+	if (false == _is_initialized) {
+		status = FSST_ERROR_NOT_INITIALIZED;
+		goto exit_point;
+	}
+
+	key_iterator_handle_t *key_it = (key_iterator_handle_t *)it;
+	kv_dir = key_it->dir_handle;
+	kv_dir_ent = readdir(kv_dir);
+	while (kv_dir_ent != NULL) {
+		if ( (key_it->prefix == NULL) ||
+			 (strncmp(kv_dir_ent->d_name, key_it->prefix, strnlen(key_it->prefix, FSST_MAX_KEY_LEN)) != 0) ) {
+			strncpy(key, kv_dir_ent->d_name, FSST_MAX_KEY_LEN);
+			key[FSST_MAX_KEY_LEN] = '\0';
+			status = FSST_ERROR_OK;
+			break;
+		}
+		kv_dir_ent = readdir(kv_dir);
+	}
+
+
+exit_point:
+	_mutex.unlock();
+	return status;
+
 }
 
 int FileSystemStore::iterator_close(iterator_t it)
 {
+	int status = FSST_ERROR_OK;
+	key_iterator_handle_t *key_it = (key_iterator_handle_t *)it;
+
+	_mutex.lock();
+	if (key_it == NULL) {
+		status = FSST_ERROR_INVALID_INPUT;
+		goto exit_point;
+	}
+
+	if (set_handle->key == NULL) {
+		status = FSST_ERROR_INVALID_INPUT;
+	}
+	else {
+		delete key_it->prefix;
+	}
+
+	delete key_it;
+
+exit_point:
+	_mutex.unlock();
+	return status;
 }
 
 
+int status = FSST_ERROR_OK;
+inc_set_handle_t *set_handle = (inc_set_handle_t *)handle;
 
+if (set_handle == NULL) {
+	return FSST_ERROR_INVALID_INPUT;
+}
+
+if (set_handle->key == NULL) {
+	status = FSST_ERROR_INVALID_INPUT;
+}
+else {
+	delete set_handle->key;
+}
+
+delete set_handle;
+return status;
 
 
