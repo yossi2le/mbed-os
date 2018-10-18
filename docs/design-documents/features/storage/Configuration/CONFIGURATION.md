@@ -3,7 +3,7 @@
 The following document intends to describe the new secure storage configuration. 
 
 ## New Storage design
-![New storage design](file:./NewStorageDesign.jpg)
+![New storage design](./NewStorageDesign.jpg)
 
 This document describes the configuration for the kvstore part (left side of the diagram above) and its underlying components such as filesystem and block device, the predefined configurations SECURE_STORE, TDB_INTERNAL TDB_EXTERNAL, TDB_EXTERNAL_NO_RBP, FILESYSTEM and FILESYSTEM_NO_RBP.
 
@@ -11,7 +11,7 @@ The last section of this document will explain how to override the configuration
 In order to use the default configurations, the storage_type parameter should be set to one of the configurations options avalable. In most cases, Thats will allow to change the storage configuration layout by setting one parameter only.
 
 ## Configuration structure
-![ConfigurationStructure](file:./ConfigurationStructure.jpg)
+![ConfigurationStructure](./ConfigurationStructure.jpg)
 
 The kvstore configuration file  structure includes five configuration files. The top most configuration file is used to setup the full configuration of the storage by defining a single parameter (storage_type) to SECURE_STORE, TDB_INTERNAL TDB_EXTERNAL, TDB_EXTERNAL_NO_RBP, FILESYSTEM or FILESYSTEM_NO_RBP. The configuration files in the subfolders are used to implement the above top level configurations, in addition to a user defined configuration.
 
@@ -53,7 +53,7 @@ This is the main storage configuration mbed_lib json file.
 ### TDB_INTERNAL
 The internal configuration is the smallest configuration yet secured. 
 
-![TDB_Internal](file:./Internal.jpg)
+![TDB_Internal](./Internal.jpg)
 
 In this configuration all kvstore C API will be mapped to the TDBStore in the internal flash. To use this configuration the storage_type parameter in storage mbed_lib.json should be set to TDB_INTERNAL. 
 
@@ -86,7 +86,7 @@ Below is the TDB_INTERNAL configuration mbed_lib.json
 For this configuration please define the section of the internal storage that will be used for data, by defining these parameters: internal_base_address and internal_size. If not defined, the storage will start in the first sector immediately after the end of the application. This can reduce the ability to update the application with a bigger one.
 
 ### TDB_External
-![External](file:./TDB_External.jpg)
+![External](./TDB_External.jpg)
 
 TDB_EXTERNAL uses a TDBStore in the internal flash for security rollback protection and a TDBStore on the external flash for the data. In This configuration all kvstore C API paths, beside nsec_path, are mapped to work with the SecureStore class and this class will handle the use of the two TDBStores. The nsec_path will be mapped to the external TDBStore directly. Unless configured diffrently the external TDBStore will work on top of the default block device, while the internal TDBStore will work with the FlashIAPBlockdevice. 
 External TDBStore blockdevice can be set to any of the following blockdevice. SPIF, QSPIF, DATAFASH and SD.
@@ -134,7 +134,7 @@ Below is the TDB_EXTERNAL configuration mbed_lib.json
 * external_base_address - The start address of the external block device for non default blockdevices.
 
 ### TDB_External_no_RBP
-![External](file:./TDB_External_no_rbp.jpg)
+![External](./TDB_External_no_rbp.jpg)
 
 TDB_EXTERNAL_NO_RBF Configuration has no support for roleback protection and therefore less secure.
 The TDB_EXTERNAL_NO_RBP uses only one TDBStore on the external flash for all data. in this configuration all kvstore C API paths, beside nsec_path and rbp_path, are mapped to work with the SecureStore class. The nsec_path will be mapped to the external TDBStore directly and rbp_path is ignored. The external TDBStore will work on top of the default block device. External TDBStore blockdevice can be set to any of the following blockdevice. SPIF, QSPIF, DATAFASH and SD.
@@ -168,7 +168,7 @@ Below is the TDB_EXTERNAL_NO_RBP configuration mbed_lib.json
 
 
 ### FILESYSTEM
-![FILESYSTEM](file:./FILESYSTEM.jpg)
+![FILESYSTEM](./FILESYSTEM.jpg)
 
 The FILESYSTEM configuration resembles the EXTERNAL with the difference that it uses FileSysytemStore on the external flash. By default the FileSystemStore will use the default filesystem and the default block device.
 in this configuration all kvstore C API paths, beside nsec_path, are all mapped to work with the SecureStore class and this class will handle the use of the internal TDBStore or external FileSystemStore. The nsec_path will be mapped directly to the FileSystemStore in the external memory.
@@ -230,7 +230,7 @@ Below is the FILESYSTEM configuration mbed_lib.json
 
 
 ### FILESYSTEM_NO_RBP
-![FILESYSTEM](file:./FILESYSTEM.jpg)
+![FILESYSTEM](./FILESYSTEM_no_rbp.jpg)
 
 The FILESYSTEM_NO_RBP configuration resembles the EXTERNAL_NO_RBF with the difference that it uses FileSysytemStore on the external flash. By default the FileSystemStore will use the default filesystem and the default block device. This Configuration has no support for roleback protection and therefore less secure.
 in this configuration all kvstore C API paths, beside nsec_path, are all mapped to work with the SecureStore class and this class will handle the use external FileSystemStore. The nsec_path will be mapped directly to the FileSystemStore in the external memory and the rbf_path is ignored.
