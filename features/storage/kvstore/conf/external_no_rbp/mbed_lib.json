@@ -1,0 +1,17 @@
+{
+    "name": "tdb_external_no_rbp",
+    "config": {
+		"external_size": {
+            "help": "Size of the external block device",
+            "value": "NULL"
+        },
+		"external_base_address": {
+            "help": "If not defined the default is from address 0",
+            "value": "NULL"
+        },
+		"blockdevice": {
+            "help": "Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM",
+            "value": "NULL"
+        }
+    }
+}

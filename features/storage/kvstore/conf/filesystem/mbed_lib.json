@@ -1,0 +1,41 @@
+{
+    "name": "filesystem_store",
+    "config": {
+		"internal_base_address": {
+            "help": "Start address of internal FlashIAP block device",
+            "value": "NULL"
+        },
+		"rbp_internal_size": {
+            "help": "If not defined default size is 4K*#enteries/32",
+            "value": "NULL"
+        },
+		"rbp_number_of_entries": {
+            "help": "If not defined default is 64",
+            "value": "64"
+        },
+		"filesystem": {
+            "help": "Options are default, FAT or LITTLE. if not specified default filesystem will be used",
+            "value": "NULL"
+        },
+        "blockdevice": {
+            "help": "Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If not set the default block device will be use",
+            "value": "NULL"
+        },
+		"external_size": {
+            "help": "Size in bytes of the external block device, if not specified the maximum is the default.",
+            "value": "NULL"
+        },
+		"external_base_address": {
+            "help": "If not defined the default is from address 0",
+            "value": "NULL"
+        },	
+        "mount_point": {
+            "help": "Where to mount the filesystem. Ignored if default file system is applied.",
+            "value": "/sd"
+        },
+		"folder_path": {
+            "help": "Path for the working directory where the FileSyetemStore stores the data",
+            "value": "/kvstore"
+        }
+    }
+}

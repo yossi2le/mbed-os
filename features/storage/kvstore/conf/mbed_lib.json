@@ -1,0 +1,12 @@
+"name": "storage",
+    "config": {
+    	"storage_type": {
+    		"help": "Options are INTERNAL, EXTERNAL or FILESYSTEM. if missing a user defined configuration will be used ",
+            "value": "NULL"
+    	},
+		"rbp_number_of_enteries": {
+            "help": "if not defined default is 64",
+            "value": "64"
+        }
+    }
+}

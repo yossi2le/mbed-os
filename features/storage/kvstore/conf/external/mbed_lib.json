@@ -1,0 +1,29 @@
+{
+    "name": "tdb_external",
+    "config": {
+		"internal_base_address": {
+            "help": "Start address of internal FlashIAP block device",
+            "value": "NULL"
+        },
+		"rbp_internal_size": {
+            "help": "If not defined default size is 4K*#enteries/32",
+            "value": "NULL"
+        },
+		"rbp_number_of_entries": {
+            "help": "If not defined default is 64",
+            "value": "64"
+        }
+		"blockdevice": {
+            "help": "Options are default, SPIF, DATAFASH, QSPIF or SD",
+            "value": "NULL"
+        },
+		"external_size": {
+            "help": "Size of the external block device",
+            "value": "NULL"
+        },
+		"external_base_address": {
+            "help": "If not defined the default is from address 0",
+            "value": "NULL"
+        }
+    }
+}
