@@ -114,7 +114,8 @@ public:
     
 private:
     int _build_full_path_key(char *full_path_key_dst, const char *key_stc);
-    int _verify_key_file(const char *key, key_metadata_t *key_metadata, fs_file_t *kv_file);
+    int _verify_key_file(const char *key, key_metadata_t *key_metadata, File *kv_file);
+    int _strip_full_path_from_key(char **stripped_key_ptr_dst, char *full_path_key_src);
 
 private:
     FileSystem *_fs;
@@ -125,28 +126,28 @@ private:
     bool _is_initialized;
 	char _cfg_fs_path[FSST_PATH_NAME_SIZE+1];
 };
-//Important data structures
-// Key metadata
-typedef struct {
-    uint32_t magic;
-    uint16_t metadata_size;
-    uint16_t revision;
-    uint32_t user_flags;
-    uint32_t data_size;
-} key_metadata_t;
-
-// incremental set handle
-typedef struct {
-    char *key;
-    uint32_t create_flags;
-    size_t data_size;
-} inc_set_handle_t;
-
-// iterator handle
-typedef struct {
-    void *dir_handle;
-    char *prefix;
-} key_iterator_handle_t;
+////Important data structures
+//// Key metadata
+//typedef struct {
+//    uint32_t magic;
+//    uint16_t metadata_size;
+//    uint16_t revision;
+//    uint32_t user_flags;
+//    uint32_t data_size;
+//} key_metadata_t;
+//
+//// incremental set handle
+//typedef struct {
+//    char *key;
+//    uint32_t create_flags;
+//    size_t data_size;
+//} inc_set_handle_t;
+//
+//// iterator handle
+//typedef struct {
+//    void *dir_handle;
+//    char *prefix;
+//} key_iterator_handle_t;
 
 } //namespace mbed
 #endif //MBED_FSST_BLOCK_DEVICE_H
