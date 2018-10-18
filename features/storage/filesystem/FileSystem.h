@@ -39,7 +39,7 @@ typedef void *fs_dir_t;
 // Predeclared classes
 class Dir;
 class File;
-class FileSystemStore;
+//class FileSystemStore;
 
 /** A filesystem object provides filesystem operations and file operations
  *  for the File and Dir classes on a block device.
