@@ -22,6 +22,27 @@ The configuration files can be found under `conf/<configuration name>`.
 * conf/filesystem - storage type FILESYSTEM configuration is similar to EXTERNAL but based on a file system. The default behavior will set FATFS for SD card and LITTLEFS will be used for external flash, however, this can be set differently in the configuration file. Use this configuration if you need the file system with POSIX API in addition to the set/get API.
 * conf/filesystem_no_rbp - storage type FILESYSTEM_NO_RBP configuration allows security like FILESYSTEM configuration but without rollback protection.
 
+##Configuration parameters
+The following is a list of all storage parameters exists and their description. 
+
+storage_type - This parameter should be set to the desired configuration.
+    * TDB_INTERNAL
+    * TDB_EXTERNAL
+    * TDB_EXTERNAL_NO_RBP
+    * FILESYSTEM
+    * FILESYSTEM_NO_RBP
+* default_kv - This is a string representing the name for the default kvstore configuration.
+* internal_size - The size in bytes for the internal FlashIAP block device. This should enable together with the internal_base_address to adjust exactly the size and location where the block device resides on memory. If not defined the block device will try to get the maximum size available. 
+* internal_base_address - The address where the block device start. This helps to prevent collisions with other needs like firmware updates. If not defined the start address will be set to the first sector after the application code ends
+* rbp_number_of_entries - set the number of entries allowed for rollback protection. The default is set to 64.
+rbp_internal_size sets the size for the rollback protection TDBStore in the internal memory. the base address will be calculated as flash ends address - size.
+* external_size - The size of the external block device in bytes for nondefault block devices.
+* external_base_address - The start address of the external block device for nondefault block devices.
+* filesystem - Options are FAT, LITTLE or default. If not set the default file system will be used.
+* blockdevice - Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If filesystem set to default this parameter is ignored.
+* mount_point - mount point for the filesystem. This parameter will be ignored if the filesystem is set to default.
+* folder_path - Path for the working directory where the FileSyetemStore stores the data
+
 
 ## Storage configuration
 
@@ -42,13 +63,6 @@ Below is the main storage configuration mbed_lib json file.
     }
 }
 ```
-* storage_type - This parameter should be set to the desired configuration.
-    * TDB_INTERNAL
-    * TDB_EXTERNAL
-    * TDB_EXTERNAL_NO_RBP
-    * FILESYSTEM
-    * FILESYSTEM_NO_RBP
-* default_kv - This is a string representing the name for the default kvstore configuration. 
     
 ### TDB_INTERNAL
 The internal configuration is the smallest configuration yet secured. 
@@ -78,10 +92,6 @@ Below is the TDB_INTERNAL configuration mbed_lib.json
 }
 ```
 
-* internal_size - The size in bytes for the internal FlashIAP block device. This should enable together with the internal_base_address to adjust exactly the size and location where the block device resides on memory. If not defined the block device will try to get the maximum size available. 
-* internal_base_address - The address where the block device start. This helps to prevent collisions with other needs like firmware updates. If not defined the start address will be set to the first sector after the application code ends
-* rbp_number_of_entries - set the number of entries allowed for rollback protection. The default is set to 64.
-
 For this configuration please define the section of the internal storage that will be used for data, by defining these parameters: internal_base_address and internal_size. If not defined, the storage will start in the first sector immediately after the end of the application. This can reduce the ability to update the application with a bigger one.
 
 ### TDB_External
@@ -105,7 +115,11 @@ Below is the TDB_EXTERNAL configuration mbed_lib.json
         "rbp_number_of_entries": {
             "help": "If not defined default is 64",
             "value": "64"
-        }
+        },
+        "internal_base_address": {
+            "help": "If not defined the default is the first sector after the application code ends.",
+            "value": "NULL"
+        },
         "blockdevice": {
             "help": "Options are default, SPIF, DATAFASH, QSPIF or SD",
             "value": "NULL"
@@ -121,11 +135,6 @@ Below is the TDB_EXTERNAL configuration mbed_lib.json
     }
 }
 ```
-* rbp_internal_size sets the size for the rollback protection TDBStore in the internal memory. the base address will be calculated as flash ends address - size.
-* rbp_number_of_entries - set the number of entries allowed for rollback protection. The default is set to 64.
-* blockdevice - Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If filesystem set to default this parameter is ignored.
-* external_size - The size of the external block device in bytes for nondefault block devices.
-* external_base_address - The start address of the external block device for nondefault block devices.
 
 ### TDB_External_no_RBP
 ![External](./TDB_External_no_rbp.jpg)
@@ -156,10 +165,6 @@ Below is the TDB_EXTERNAL_NO_RBP configuration mbed_lib.json
     }
 }
 ```
-* external_size - The size of the external block device in bytes.
-* external_base_address - The start address of the external block device.
-* blockdevice - Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. This parameter must be set when external_storage is enabled. If filesystem set to default this parameter is ignored.
-
 
 ### FILESYSTEM
 ![FILESYSTEM](./FILESYSTEM.jpg)
@@ -180,6 +185,10 @@ Below is the FILESYSTEM configuration mbed_lib.json
         "rbp_number_of_entries": {
             "help": "If not defined default is 64",
             "value": "64"
+        },
+        "internal_base_address": {
+            "help": "If not defined the default is the first sector after the application code ends.",
+            "value": "NULL"
         },
         "filesystem": {
             "help": "Options are default, FAT or LITTLE. If not specified default filesystem will be used",
@@ -208,15 +217,7 @@ Below is the FILESYSTEM configuration mbed_lib.json
     }
 }
 ```
-* rbp_internal_size -  The internal size for the flashiap block device if the external storage is enabled. In that case, the start address will be set to end of flash - rbp_internal_size.
-* rbp_number_of_entries - set the number of entries allowed for rollback protection. The default is set to 64.
-* filesystem - Options are FAT, LITTLE or default. If not set the default file system will be used.
-* blockdevice - Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If filesystem set to default this parameter is ignored.
-* external_size - The size of the external block device in bytes. If not specified the entire external flash will be applied.
-* external_base_address - The start address of the external block device. If not set, the default value is 0.
-* mount_point - mount point for the filesystem. This parameter will be ignored if the filesystem is set to default.
-* folder_path - Path for the working directory where the FileSyetemStore stores the data
-
+If filesystem is not set the default filesystem and block device will be applied and blockdevice, external_size and external_base_address will be ignored.
 
 ### FILESYSTEM_NO_RBP
 ![FILESYSTEM](./FILESYSTEM_no_rbp.jpg)
@@ -257,12 +258,8 @@ Below is the FILESYSTEM configuration mbed_lib.json
     }
 }
 ```
-* filesystem - Options are FAT, LITTLE or default. If not set the default file system will be used.
-* blockdevice - Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If filesystem set to default this parameter is ignored.
-* external_size - The size of the external block device in bytes. If not specified the entire external flash will be applied.
-* external_base_address - The start address of the external block device. If not set, the default value is 0.
-* mount_point - mount point for the filesystem. This parameter will be ignored if the filesystem is set to default.
-* folder_path - Path for the working directory where the FileSyetemStore stores the data
+
+If filesystem is not set the default filesystem and block device will be applied and blockdevice, external_size and external_base_address will be ignored 
 
 ### Configuration functions API.
 Base on the parameter above a different setup function will be called. Below is a list of setup function and their description.
