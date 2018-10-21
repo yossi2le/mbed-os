@@ -25,7 +25,7 @@ The configuration files can be found under `conf/<configuration name>`.
 ## Configuration parameters
 The following is a list of all storage parameters exists and their description. 
 
-storage_type - This parameter should be set to the desired configuration.
+* storage_type - This parameter should be set to the desired configuration.
     * TDB_INTERNAL
     * TDB_EXTERNAL
     * TDB_EXTERNAL_NO_RBP
