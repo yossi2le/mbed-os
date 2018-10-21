@@ -22,7 +22,7 @@ The configuration files can be found under `conf/<configuration name>`.
 * conf/filesystem - storage type FILESYSTEM configuration is similar to EXTERNAL but based on a file system. The default behavior will set FATFS for SD card and LITTLEFS will be used for external flash, however, this can be set differently in the configuration file. Use this configuration if you need the file system with POSIX API in addition to the set/get API.
 * conf/filesystem_no_rbp - storage type FILESYSTEM_NO_RBP configuration allows security like FILESYSTEM configuration but without rollback protection.
 
-##Configuration parameters
+## Configuration parameters
 The following is a list of all storage parameters exists and their description. 
 
 storage_type - This parameter should be set to the desired configuration.
