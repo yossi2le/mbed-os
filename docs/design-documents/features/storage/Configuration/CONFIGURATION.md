@@ -32,7 +32,7 @@ Below is the main storage configuration mbed_lib json file.
 "name": "storage",
     "config": {
         "storage_type": {
-            "help": "Options are INTERNAL, EXTERNAL or FILESYSTEM. if missing a user defined configuration will be used ",
+            "help": "Options are TDB_INTERNAL, TDB_EXTERNAL, TDB_EXTERNAL_NO_RBP, FILESYSTEM or FILESYSTEM_NO_RBP.",
             "value": "NULL"
         },
         "default_kv": {
@@ -42,7 +42,7 @@ Below is the main storage configuration mbed_lib json file.
     }
 }
 ```
-* storage_type - This parameter should be set to the desire configuration.
+* storage_type - This parameter should be set to the desired configuration.
     * TDB_INTERNAL
     * TDB_EXTERNAL
     * TDB_EXTERNAL_NO_RBP
@@ -121,7 +121,7 @@ Below is the TDB_EXTERNAL configuration mbed_lib.json
     }
 }
 ```
-* rbp_internal_size sets the size for the rbp TDBStore in the internal memory. the base address will be calculated as flash ends address - size.
+* rbp_internal_size sets the size for the rollback protection TDBStore in the internal memory. the base address will be calculated as flash ends address - size.
 * rbp_number_of_entries - set the number of entries allowed for rollback protection. The default is set to 64.
 * blockdevice - Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If filesystem set to default this parameter is ignored.
 * external_size - The size of the external block device in bytes for nondefault block devices.
@@ -186,7 +186,7 @@ Below is the FILESYSTEM configuration mbed_lib.json
             "value": "NULL"
         },
         "blockdevice": {
-            "help": "Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If not set the default block device will be use",
+            "help": "Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If not set the default block device will be used",
             "value": "NULL"
         },
         "external_size": {
@@ -198,7 +198,7 @@ Below is the FILESYSTEM configuration mbed_lib.json
             "value": "NULL"
         },    
         "mount_point": {
-            "help": "Where to mount the filesystem. Ignored if default file system is applied.",
+            "help": "Where to mount the filesystem. Ignored if the default file system is applied.",
             "value": "/sd"
         },
         "folder_path": {
@@ -235,7 +235,7 @@ Below is the FILESYSTEM configuration mbed_lib.json
             "value": "NULL"
         },
         "blockdevice": {
-            "help": "Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If not set the default block device will be use",
+            "help": "Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If not set the default block device will be used",
             "value": "NULL"
         },
         "external_size": {
@@ -247,7 +247,7 @@ Below is the FILESYSTEM configuration mbed_lib.json
             "value": "NULL"
         },    
         "mount_point": {
-            "help": "Where to mount the filesystem. Ignored if default file system is applied.",
+            "help": "Where to mount the filesystem. Ignored if the default file system is applied.",
             "value": "/sd"
         },
         "folder_path": {
@@ -290,11 +290,11 @@ bool _storage_config_TDB_INTERNAL();
 /**
  * @brief This function initialize external memory secure storage
  *        This includes a SecureStore class with TDBStore over FlashIAPBlockdevice 
- *        and an external TDBStore over a default blockdevice unless configured diffrently.
+ *        and an external TDBStore over a default blockdevice unless configured differently.
  *        The following is a list of configuration parameter:
- *        MBED_CONF_STORAGE_TDB_EXTERNAL_RBP_INTERNAL_SIZE - Size of the internal FlashIAPBlockDevice annd by default is set to 4K*#enteries/32. The start address will be set to end of flash - rbp_internal_size.
+ *        MBED_CONF_STORAGE_TDB_EXTERNAL_RBP_INTERNAL_SIZE - Size of the internal FlashIAPBlockDevice and by default is set to 4K*#enteries/32. The start address will be set to end of flash - rbp_internal_size.
  *        MBED_CONF_STORAGE_TDB_EXTERNAL_RBP_NUMBER_OF_ENTRIES - If not defined default is 64
- *        MBED_CONF_STORAGE_TDB_EXTERNAL_EXTERNAL_SIZE - Size of the external blockdevice in bytes or NULL for max possibale size.
+ *        MBED_CONF_STORAGE_TDB_EXTERNAL_EXTERNAL_SIZE - Size of the external blockdevice in bytes or NULL for max possible size.
  *        MBED_CONF_STORAGE_TDB_EXTERNAL_EXTERNAL_BASE_ADDRESS - The block device start address.
  *        MBED_CONF_STORAGE_TDB_EXTERNAL_EXTERNAL_BLOCK_DEVICE - Alowed vlaues are: default, SPIF, DATAFASH, QSPIF or SD
  * @returns true on success or false on failure.
@@ -304,9 +304,9 @@ bool _storage_config_TDB_EXTERNAL();
 /**
  * @brief This function initialize a predefined external memory secure storage
  *        This includes a SecureStore class with external TDBStore over a blockdevice or, 
- *        if no blockdevice was set the default blockdevice will be use.
+ *        if no blockdevice was set the default blockdevice will be used.
  *        The following is a list of configuration parameter:
- *        MBED_CONF_STORAGE_TDB_EXTERNAL_NO_RBP_EXTERNAL_SIZE - Size of the external blockdevice in bytes or NULL for max possibale size.
+ *        MBED_CONF_STORAGE_TDB_EXTERNAL_NO_RBP_EXTERNAL_SIZE - Size of the external blockdevice in bytes or NULL for max possible size.
  *        MBED_CONF_STORAGE_TDB_EXTERNAL_NO_RBP_EXTERNAL_BASE_ADDRESS - The block device start address
  *        MBED_CONF_STORAGE_TDB_EXTERNAL_NO_RBP_EXTERNAL_BLOCK_DEVICE - Alowed vlaues are: default, SPIF, DATAFASH, QSPIF or SD
  * @returns true on success or false on failure.
@@ -321,9 +321,9 @@ bool _storage_config_TDB_EXTERNAL_NO_RBP();
  *        The following is a list of configuration parameter:
  *        MBED_CONF_STORAGE_FILESYSTEM_RBP_INTERNAL_SIZE - Size of the internal FlashIAPBlockDevice and by default is set to 4K*#enteries/32. The start address will be set to end of flash - rbp_internal_size.
  *        MBED_CONF_STORAGE_FILESYSTEM_RBP_NUMBER_OF_ENTRIES - If not defined default is 64
- *        MBED_CONF_STORAGE_FILESYSTEM_FILESYSTEM - Alowed vlaues are: default, FAT or LITTLE
- *        MBED_CONF_STORAGE_FILESYSTEM_BLOCKDEVICE - Alowed vlaues are: default, SPIF, DATAFASH, QSPIF or SD 
- *        MBED_CONF_STORAGE_FILESYSTEM_EXTERNAL_SIZE - External Blockdevice size in bytes or NULL for max possibale size. 
+ *        MBED_CONF_STORAGE_FILESYSTEM_FILESYSTEM - Allowed values are: default, FAT or LITTLE
+ *        MBED_CONF_STORAGE_FILESYSTEM_BLOCKDEVICE - Allowed values are: default, SPIF, DATAFASH, QSPIF or SD 
+ *        MBED_CONF_STORAGE_FILESYSTEM_EXTERNAL_SIZE - External Blockdevice size in bytes or NULL for max possible size. 
  *        MBED_CONF_STORAGE_FILESYSTEM_EXTERNAL_BASE_ADDRESS - The block device start address.
  *        MBED_CONF_STORAGE_FILESYSTEM_MOUNT_POINT - Where to mount the filesystem
  *        MBED_CONF_STORAGE_FILESYSTEM_FOLDER_PATH - The working folder paths
@@ -335,11 +335,11 @@ bool _storage_config_FILESYSTEM();
 /**
  * @brief This function initialize a predefined FILESYSTEM_NO_RBP memory secure storage with no 
  *        rollback protection. This includes a SecureStore class an external FileSysteStore over a default 
- *        filesystem with default blockdevice unless diffrently configured.
+ *        filesystem with default blockdevice unless differently configured.
  *        The following is a list of configuration parameter:
- *        MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_FILESYSTEM - Alowed vlaues are: default, FAT or LITTLE
- *        MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_BLOCKDEVICE - Alowed vlaues are: default, SPIF, DATAFASH, QSPIF or SD
- *        MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_EXTERNAL_SIZE - Blockdevice size in bytes. or NULL for max possibale size. 
+ *        MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_FILESYSTEM - Allowed values are: default, FAT or LITTLE
+ *        MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_BLOCKDEVICE - Allowed values are: default, SPIF, DATAFASH, QSPIF or SD
+ *        MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_EXTERNAL_SIZE - Blockdevice size in bytes. or NULL for max possible size. 
  *        MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_EXTERNAL_BASE_ADDRESS - The block device start address.
  *        MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_MOUNT_POINT - Where to mount the filesystem
  *        MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_FOLDER_PATH - The working folder paths
@@ -356,6 +356,8 @@ MBED_WEAK bool storage_configuration()
 
 ### Override user-defined setup
 in order to create a much more complex setup including using other block devices such as MBRBlockDevice or SlicingBlockDevice, there is a need to override the storage_configuration function and generate any storage configuration of choice. 
+
+
 
 
 
