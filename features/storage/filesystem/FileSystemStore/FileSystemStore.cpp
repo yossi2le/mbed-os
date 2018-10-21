@@ -67,6 +67,7 @@ FileSystemStore::FileSystemStore(size_t max_keys, FileSystem *fs) : _fs(fs), _ma
 	memset(_cfg_fs_path, 0, FSST_PATH_NAME_SIZE);
 	strncpy(_cfg_fs_path,"$fsst$", FSST_PATH_NAME_SIZE);
 	_cfg_fs_path[FSST_PATH_NAME_SIZE] = '\0';
+	printf("FileSystemStore CTOR Done\n");
 }
     	 
 // Initialization and reset
@@ -74,12 +75,14 @@ int FileSystemStore::init()
 {
   int status = FSST_ERROR_OK;
 
+  printf("FileSystemStore Init Enter\n");
+
   _mutex.lock();
 
   Dir kv_dir;
 
   if (kv_dir.open(_fs, _cfg_fs_path) != 0) {
-    tr_info("KV Dir: %s, doesnt exist - creating new.. ", _cfg_fs_path); //TBD verify ERRNO NOEXIST
+    tr_warning("KV Dir: %s, doesnt exist - creating new.. ", _cfg_fs_path); //TBD verify ERRNO NOEXIST
     _num_keys = 0;
     if (_fs->mkdir(_cfg_fs_path,/* which flags ? */0777) != 0) {
     	tr_error("KV Dir: %s, mkdir failed.. ", _cfg_fs_path); //TBD verify ERRNO NOEXIST
@@ -88,6 +91,7 @@ int FileSystemStore::init()
     }
   }
   else {
+	  tr_warning("KV Dir: %s, exists(verified) - now closing it", _cfg_fs_path);
 	  _num_keys = kv_dir.size();
 	  if (kv_dir.close() != 0) {
 		  tr_error("KV Dir: %s, dir_close failed", _cfg_fs_path); //TBD verify ERRNO NOEXIST
@@ -105,6 +109,7 @@ exit_point:
 int FileSystemStore::_build_full_path_key(char *full_path_key_dst, const char *key_src)
 {
 	strncpy(full_path_key_dst,_cfg_fs_path, FSST_PATH_NAME_SIZE);
+	strcat(full_path_key_dst,"/");
 	strncat(full_path_key_dst, key_src, FSST_MAX_KEY_SIZE);
 	full_path_key_dst[(FSST_PATH_NAME_SIZE+FSST_MAX_KEY_SIZE)] = '\0';
 	return 0;
@@ -150,12 +155,14 @@ int FileSystemStore::reset()
 	kv_dir.open(_fs, _cfg_fs_path);
 
 	while (kv_dir.read(&dir_ent) != 0) {
+		tr_warning("Looping FSST folder: %s, File - %s", _cfg_fs_path, dir_ent.d_name);
 		if (dir_ent.d_type != DT_REG) {
 			tr_error("KV_Dir should contain only Regular File - %s", dir_ent.d_name);
+			continue;
 		}
 		// Build File's full path name and delete it
 		_build_full_path_key(full_path_key, dir_ent.d_name);
-		_fs->remove(full_path_key);
+		_fs->remove(/*dir_ent.d_name*/full_path_key);
 	}
 
 	// Delete empty folder
@@ -222,9 +229,9 @@ int FileSystemStore::_verify_key_file(const char *key, key_metadata_t *key_metad
 
 	uint32_t file_size = 0;
 
-	if (0 != kv_file->open(_fs, full_path_key, O_RDONLY) ) {
+	if (0 != kv_file->open(_fs, /*key*/ full_path_key, O_RDONLY) ) {
 	  tr_error("Couldn't read: %s", full_path_key);
-	  status = FSST_ERROR_FS_OPERATION_FAILED;
+	  status = FSST_ERROR_NOT_FOUND;
 	  // TBD handle error scenario..?
 	  goto exit_point;
 	}
@@ -260,9 +267,9 @@ int FileSystemStore::get(const char *key, void *buffer, size_t buffer_size, size
 
 	key_metadata_t key_metadata;
 
-	if (FSST_ERROR_OK != _verify_key_file(key, &key_metadata, &kv_file) ) {
-		tr_error("File Verification Failed: %s", key);
-		status = FSST_ERROR_CORRUPTED_DATA;
+
+	if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) != FSST_ERROR_OK ) {
+		tr_error("File Verification Failed: %s, status: %d", key, status);
 		goto exit_point;
 	}
 
@@ -333,7 +340,7 @@ int FileSystemStore::remove(const char *key)
 		return FSST_ERROR_NOT_INITIALIZED;
 	}
 
-    int status = _fs->remove(full_path_key);
+    int status = _fs->remove(/*key */full_path_key);
     if (status == 0) {
     	_num_keys--;
     }
@@ -345,19 +352,23 @@ int FileSystemStore::remove(const char *key)
 int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t final_data_size, uint32_t create_flags)
 {
 	char full_path_key[FSST_PATH_NAME_SIZE+FSST_MAX_KEY_SIZE+1] = {0};
+	_build_full_path_key(full_path_key, key);
 
 	File kv_file;
 	if (0 !=kv_file.open(_fs, full_path_key, O_RDONLY)) {
+		tr_warning("set_start open(verify exist): %s, does not exist", full_path_key);
 		if (_num_keys == _max_keys) {
 			return FSST_ERROR_MAX_KEYS_REACHED;
 		}
 		_num_keys++;
 	}
 	else {
+		tr_warning("set_start open(verify exist): %s, exists - now closing", full_path_key);
 		kv_file.close();
 	}
 
-	if (0 !=kv_file.open(_fs, full_path_key, O_WRONLY)) {
+	if (0 !=kv_file.open(_fs, full_path_key, O_WRONLY|O_CREAT|O_TRUNC)) {
+		tr_warning("set_start failed to open: %s, for writing", full_path_key);
 		return FSST_ERROR_FS_OPERATION_FAILED;
 	}
 
@@ -392,12 +403,12 @@ int FileSystemStore::set_add_data(set_handle_t handle, const void *value_data, s
 
 
 	File kv_file;
-	if (0 != kv_file.open(_fs, full_path_key, O_RDONLY)) {
+	if (0 != kv_file.open(_fs, /*set_handle->key*/ full_path_key, O_RDONLY)) {
 		return FSST_ERROR_NOT_FOUND;
 	}
 	kv_file.close();
 
-	if (0 != kv_file.open(_fs, full_path_key, O_APPEND)) {
+	if (0 != kv_file.open(_fs, /*set_handle->key*/ full_path_key, O_WRONLY|O_APPEND)) {
 		return FSST_ERROR_FS_OPERATION_FAILED;
 	}
 
@@ -487,7 +498,7 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 
 	while (kv_dir->read(&kv_dir_ent) != 0 ) {
 		if (kv_dir_ent.d_type != DT_REG) {
-			tr_error("KV_Dir should contain only Regular File - %s", dir_ent.d_name);
+			tr_error("KV_Dir should contain only Regular File - %s", kv_dir_ent.d_name);
 		}
 
 		//_build_full_path_key(full_path_key, kv_dir_ent.d_name); //Is it required or name is already full path?
