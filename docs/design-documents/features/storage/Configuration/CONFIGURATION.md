@@ -80,7 +80,7 @@ Below is the TDB_INTERNAL configuration mbed_lib.json
 
 * internal_size - The size in bytes for the internal FlashIAP block device. This should enable together with the internal_base_address to adjust exactly the size and location where the block device resides on memory. If not defined the block device will try to get the maximum size available. 
 * internal_base_address - The address where the block device start. This helps to prevent collisions with other needs like firmware updates. If not defined the start address will be set to the first sector after the application code ends
-* rbp_number_of_entries - set the number of entries allowed for rollback protection. the default is set to 64.
+* rbp_number_of_entries - set the number of entries allowed for rollback protection. The default is set to 64.
 
 For this configuration please define the section of the internal storage that will be used for data, by defining these parameters: internal_base_address and internal_size. If not defined, the storage will start in the first sector immediately after the end of the application. This can reduce the ability to update the application with a bigger one.
 
@@ -131,7 +131,7 @@ Below is the TDB_EXTERNAL configuration mbed_lib.json
 ![External](./TDB_External_no_rbp.jpg)
 
 TDB_EXTERNAL_NO_RBF Configuration has no support for rollback protection and therefore less secure.
-The TDB_EXTERNAL_NO_RBP uses only one TDBStore on the external flash for all data. in this configuration all kvstore C API paths, besides nonsecure path and rollback protection, are mapped to work with the SecureStore class. The nonsecure path will be mapped to the external TDBStore directly and rollback protection path is ignored. The external TDBStore will work on top of the default block device however, external TDBStore block device can be set to any of the following block devices. SPIF, QSPIF, DATAFASH and SD.
+The TDB_EXTERNAL_NO_RBP uses only one TDBStore on the external flash for all data. In this configuration all kvstore C API paths, besides nonsecure path and rollback protection, are mapped to work with the SecureStore class. The nonsecure path will be mapped to the external TDBStore directly and rollback protection path is ignored. The external TDBStore will work on top of the default block device however, external TDBStore block device can be set to any of the following block devices SPIF, QSPIF, DATAFASH and SD.
 
 
 This configuration can be enabled by setting storage_type in storage mbed_lib.json to TDB_EXTERNAL_NO_RBP.
@@ -158,7 +158,7 @@ Below is the TDB_EXTERNAL_NO_RBP configuration mbed_lib.json
 ```
 * external_size - The size of the external block device in bytes.
 * external_base_address - The start address of the external block device.
-* blockdevice - Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. This parameter must be set when external_storage is enabled. if filesystem set to default this parameter is ignored.
+* blockdevice - Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. This parameter must be set when external_storage is enabled. If filesystem set to default this parameter is ignored.
 
 
 ### FILESYSTEM
@@ -182,7 +182,7 @@ Below is the FILESYSTEM configuration mbed_lib.json
             "value": "64"
         },
         "filesystem": {
-            "help": "Options are default, FAT or LITTLE. if not specified default filesystem will be used",
+            "help": "Options are default, FAT or LITTLE. If not specified default filesystem will be used",
             "value": "NULL"
         },
         "blockdevice": {
@@ -231,7 +231,7 @@ Below is the FILESYSTEM configuration mbed_lib.json
     "name": "filesystem_store_no_rbp",
     "config": {
         "filesystem": {
-            "help": "Options are default, FAT or LITTLE. if not specified default filesystem will be used",
+            "help": "Options are default, FAT or LITTLE. If not specified default filesystem will be used",
             "value": "NULL"
         },
         "blockdevice": {
@@ -292,7 +292,7 @@ bool _storage_config_TDB_INTERNAL();
  *        This includes a SecureStore class with TDBStore over FlashIAPBlockdevice 
  *        and an external TDBStore over a default blockdevice unless configured diffrently.
  *        The following is a list of configuration parameter:
- *        MBED_CONF_STORAGE_TDB_EXTERNAL_RBP_INTERNAL_SIZE - Size of the internal FlashIAPBlockDevice. by default is 4K*#enteries/32. The start address will be set to end of flash - rbp_internal_size.
+ *        MBED_CONF_STORAGE_TDB_EXTERNAL_RBP_INTERNAL_SIZE - Size of the internal FlashIAPBlockDevice annd by default is set to 4K*#enteries/32. The start address will be set to end of flash - rbp_internal_size.
  *        MBED_CONF_STORAGE_TDB_EXTERNAL_RBP_NUMBER_OF_ENTRIES - If not defined default is 64
  *        MBED_CONF_STORAGE_TDB_EXTERNAL_EXTERNAL_SIZE - Size of the external blockdevice in bytes or NULL for max possibale size.
  *        MBED_CONF_STORAGE_TDB_EXTERNAL_EXTERNAL_BASE_ADDRESS - The block device start address.
@@ -319,7 +319,7 @@ bool _storage_config_TDB_EXTERNAL_NO_RBP();
  *        in the internal memory and an external FileSysteStore. If blockdevice and filesystem not set, 
  *        the system will use the default block device and default filesystem
  *        The following is a list of configuration parameter:
- *        MBED_CONF_STORAGE_FILESYSTEM_RBP_INTERNAL_SIZE - Size of the internal FlashIAPBlockDevice. by default is 4K*#enteries/32. The start address will be set to end of flash - rbp_internal_size.
+ *        MBED_CONF_STORAGE_FILESYSTEM_RBP_INTERNAL_SIZE - Size of the internal FlashIAPBlockDevice and by default is set to 4K*#enteries/32. The start address will be set to end of flash - rbp_internal_size.
  *        MBED_CONF_STORAGE_FILESYSTEM_RBP_NUMBER_OF_ENTRIES - If not defined default is 64
  *        MBED_CONF_STORAGE_FILESYSTEM_FILESYSTEM - Alowed vlaues are: default, FAT or LITTLE
  *        MBED_CONF_STORAGE_FILESYSTEM_BLOCKDEVICE - Alowed vlaues are: default, SPIF, DATAFASH, QSPIF or SD 
