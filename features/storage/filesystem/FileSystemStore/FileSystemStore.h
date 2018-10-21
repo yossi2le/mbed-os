@@ -89,7 +89,7 @@ class FileSystemStore /*: KVStore */{
 
 public:
     FileSystemStore(size_t max_keys, FileSystem *fs);
-    virtual ~FileSystemStore();
+    /*virtual*/ ~FileSystemStore(){}
     	 
     // Initialization and reset
     virtual int init();
