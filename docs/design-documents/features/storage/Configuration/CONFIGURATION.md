@@ -11,7 +11,27 @@ The last section of this document will explain how to override the configuration
 In order to use the default configurations, the storage_type parameter should be set to one of the configurations options available. In most cases, That's will allow changing the storage configuration layout by setting one parameter only.
 
 ## Configuration structure
-![ConfigurationStructure](./ConfigurationStructure.jpg)
+```
+kvstore
+│
+└───conf
+    │   mbed_lib.json
+    │
+    ├───external
+    │       mbed_lib.json
+    │
+    ├───external_no_rbp
+    │       mbed_lib.json
+    │
+    ├───filesystem
+    │       mbed_lib.json
+    │
+    ├───filesystem_no_rbp
+    │       mbed_lib.json
+    │
+    └───internal
+            mbed_lib.json
+```
 
 The kvstore configuration file structure includes five configuration files. The topmost configuration file is used to set up the full configuration of the storage by defining a single parameter (storage_type) to TDB_INTERNAL TDB_EXTERNAL, TDB_EXTERNAL_NO_RBP, FILESYSTEM or FILESYSTEM_NO_RBP. The configuration files in the subfolders are used to implement the above top level configurations and to allow more complex definitions then the default setups.
 
