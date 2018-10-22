@@ -487,6 +487,10 @@ int FileSystemStore::iterator_open(iterator_t *it, const char *prefix)
     Dir *kv_dir = NULL;
     key_iterator_handle_t *key_it = NULL;
 
+    if (it == NULL) {
+		return FSST_ERROR_INVALID_INPUT;
+	}
+
 	_mutex.lock();
 	if (false == _is_initialized) {
 		status = FSST_ERROR_NOT_INITIALIZED;
@@ -554,7 +558,12 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 //			tr_error("Found filed in KV Dir with ");
 	//	}
 
-		if ( (key_it->prefix == NULL) ||
+		/* original size parameter was 0 meaning dont care about name just whether file exists in dir*/
+		if (key_name_size == 0) {
+			status = FSST_ERROR_OK;
+			break;
+		}
+		else if ( (key_it->prefix == NULL) ||
 			 (strncmp(kv_dir_ent.d_name, key_it->prefix, strnlen(key_it->prefix, key_name_size-1)) == 0) ) {
 			printf("File Name: %s, name size: %d\n", kv_dir_ent.d_name, key_name_size-1);
 			strncpy(key, kv_dir_ent.d_name, key_name_size);
