@@ -16,16 +16,16 @@
 #ifndef MBED_FILE_SYSTEM_STORE_H
 #define MBED_FILE_SYSTEM_STORE_H
 
-//#include "KVSTORE.h"
+#include "KVStore.h"
 #include "FileSystem.h"
 
 #define FSST_REVISION 1
 #define FSST_MAGIC 0x46535354 // "FSST" hex 'magic' signature
-#define FSST_MAX_KEY_SIZE 256
+//#define FSST_MAX_KEY_SIZE 256
 #define FSST_PATH_NAME_SIZE 16
 
 /* FROM KV_STORE */
-typedef struct _opaque_set_handle *set_handle_t;
+/*typedef struct _opaque_set_handle *set_handle_t;
 
     typedef struct _opaque_key_iterator *iterator_t;
 
@@ -58,7 +58,7 @@ typedef struct _opaque_set_handle *set_handle_t;
         char *prefix;
     } key_iterator_handle_t;
 
-
+*/
 
 
 namespace mbed {
@@ -78,6 +78,32 @@ enum FSST_bd_error {
 
 };
 
+
+
+//Important data structures
+// Key metadata
+typedef struct {
+    uint32_t magic;
+    uint16_t metadata_size;
+    uint16_t revision;
+    uint32_t user_flags;
+    uint32_t data_size;
+} key_metadata_t;
+
+// incremental set handle
+typedef struct {
+    char *key;
+    uint32_t create_flags;
+    size_t data_size;
+} inc_set_handle_t;
+
+// iterator handle
+typedef struct {
+    void *dir_handle;
+    char *prefix;
+} key_iterator_handle_t;
+
+
 /** FileSystemStore for Secure Store
  *
  *  @code
@@ -85,11 +111,11 @@ enum FSST_bd_error {
  *  @endcode
  */
 
-class FileSystemStore /*: KVStore */{
+class FileSystemStore : KVStore {
 
 public:
     FileSystemStore(size_t max_keys, FileSystem *fs);
-    /*virtual*/ ~FileSystemStore(){}
+    virtual ~FileSystemStore(){}
     	 
     // Initialization and reset
     virtual int init();
@@ -126,28 +152,7 @@ private:
     bool _is_initialized;
 	char _cfg_fs_path[FSST_PATH_NAME_SIZE+1];
 };
-////Important data structures
-//// Key metadata
-//typedef struct {
-//    uint32_t magic;
-//    uint16_t metadata_size;
-//    uint16_t revision;
-//    uint32_t user_flags;
-//    uint32_t data_size;
-//} key_metadata_t;
-//
-//// incremental set handle
-//typedef struct {
-//    char *key;
-//    uint32_t create_flags;
-//    size_t data_size;
-//} inc_set_handle_t;
-//
-//// iterator handle
-//typedef struct {
-//    void *dir_handle;
-//    char *prefix;
-//} key_iterator_handle_t;
+
 
 } //namespace mbed
-#endif //MBED_FSST_BLOCK_DEVICE_H
+#endif //MBED_FILE_SYSTEM_STORE_H
