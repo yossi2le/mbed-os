@@ -37,8 +37,8 @@
 TDBStore (Tiny Database Storage) is a lightweight module aimed for storing data on a flash storage. It is part of of the [KVStore](../KVStore/KVStore_design.md) class family, meaning that it supports the get/set interface. It is designed to optimize performance (speed of access), reduce wearing of the flash and to minimize storage overhead. It is also resilient to power failures.
 
 ### Requirements and assumptions
-
-This feature requires a flash based block device such as `FlashIAPBlockDevice` or `SpifBlockDevice`. It can work on top of block devices that don't need erasing before writes, such as `HeapBlockDevice` or `SDBlockDevice`, but requires a flash simulator layer for this purpose, like the one offered by `FlashSimBlockDevice`. 
+TDBStore assumes that the underlying block device is fully dedicated for it (starting offset 0). If one wishes that only a part of the device is dedicated to TDBStore, then a sliced block device should be used, typically with `SlicingBlockDevice`.   
+In addition, this feature requires a flash based block device such as `FlashIAPBlockDevice` or `SpifBlockDevice`. It can work on top of block devices that don't need erasing before writes, such as `HeapBlockDevice` or `SDBlockDevice`, but requires a flash simulator layer for this purpose, like the one offered by `FlashSimBlockDevice`. 
 
 # System architecture and high-level design
 
@@ -83,8 +83,7 @@ GC is invoked in the following cases:
 Active area includes a fixed and small reserved space. This space is used for a quick storage and extraction of a write once data (like device key). Its size is 32 bytes, aligned up to the underlying block device. Once it is written, it can't be modified. It is also copied between the areas during garbage collection process.
 
 ### RAM Table
-
-All keys are indexed in memory using a RAM table. Key names are represented by a 32-bit hash. The table includes the hash (and sorted by it) and the offset to the key record in the block device. This allows both fast searching in the table as well as a low memoory footprint.
+All keys are indexed in memory using a RAM table. Key names are represented by a 32-bit hash. The table includes the hash (and sorted by it) and the offset to the key record in the block device. This allows both fast searching in the table as well as a low memory footprint. In order to keep code simple, the same CRC function, used for recored validation, is used for hash calculation (as TLS hash calculation is too heavy). 
 
 ![TDBStore RAM Table](./TDBStore_ram_table.jpg)
 
@@ -121,7 +120,7 @@ public:
 
     // Core API
     virtual int set(const char *key, const void *buffer, size_t size, uint32_t create_flags);
-    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);
+    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);
     virtual int get_info(const char *key, info_t *info);
     virtual int remove(const char *key);
  
@@ -132,7 +131,7 @@ public:
  
     // Key iterator
     virtual int iterator_open(iterator_t *it, const char *prefix = NULL);
-    virtual int iterator_next(iterator_t it, char *key, size_t key_size, size_t *actual_key_size);
+    virtual int iterator_next(iterator_t it, char *key, size_t key_size);
     virtual int iterator_close(iterator_t it);
     
     // Reserved space APIs
@@ -269,7 +268,7 @@ Pseudo code:
 **get function**
 
 Header:  
-`virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);`
+`virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);`
 
 Pseudo code:  
 - if not `_is_initialized` return "not initialized" error
@@ -278,7 +277,7 @@ Pseudo code:
 - If not found, return "not found" error
 - Read header and calculate CRC on it
 - Update CRC with key (if offset is 0)
-- Read data into user buffer, starting offset. Size is minimum of buffer size and remainder of data
+- Read data into user buffer, starting offset. Actual size is minimum of buffer size and remainder of data
 - If offset is 0
 	- Update CRC with buffer
 	- Compare calculate CRC with header CRC. Return "data corrupt" error if different.
@@ -310,13 +309,11 @@ Pseudo code:
 - Take `_mutex` 
 - Call `find_record` to find record in storage
 - If not found, return "not found" error
-- If `int_flags` field in header includes write once flag, return "write once" error
+- If `flags` field in header includes write once flag, return "write once" error
 - Fill header with all fields (except CRC), set delete flag in internal flags
 - Calculate CRC on header and name and set field in header
 - Program header
-- Program post header pad with 0xAA if needed
 - Program key
-- Program post data header pad with 0xAA if needed
 - Call `sync` on buffered block device
 - Advance `_free_space_offset`
 - Remove entry from ram table
@@ -365,7 +362,7 @@ Header:
 `virtual int set_finalize(set_handle_t handle);`
 
 Pseudo code:
-- Program 0xAA as pad in `bd_curr_offset` from handle and advance `_free_space_offset`
+- Advance `_free_space_offset` to padded offset 
 - Update a `record_header_t` structure with all relevant values
 - Program header at `bd_base_offset` from handle with pads
 - Call `sync` on buffered block device
@@ -389,7 +386,7 @@ Pseudo code:
 **iterator_next function**
 
 Header:  
-`virtual int iterator_next(iterator_t it, char *key, size_t key_size, size_t *actual_key_size);`
+`virtual int iterator_next(iterator_t it, char *key, size_t key_size);`
 
 Pseudo code:
 - Take `_mutex`  
@@ -484,9 +481,8 @@ res = 0;
 KVSTore::iterator_t it;
 tdbstore.iterator_open(&it, "Key*");
 char key[KVSTore::KV_MAX_KEY_LENGTH];
-size_t actual_key_size;
 while (!res) {
-    res = tdbstore.iterator_next(&it, key, sizeof(key), &actual_key_size);
+    res = tdbstore.iterator_next(&it, key, sizeof(key));
 }
 res = tdbstore.iterator_close(&it);
 
@@ -496,6 +492,4 @@ res = tdbstore.deinit();
 # Other information
 
 ### Open issues
-
-- Do we use TLS API for hash calculation, or do we have simpler function (to reduce code size), maybe the CRC?
 - Need to figure a way to prevent mutex abuse in incremental set APIs. 

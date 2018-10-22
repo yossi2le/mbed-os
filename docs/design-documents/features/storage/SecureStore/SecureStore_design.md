@@ -103,7 +103,7 @@ public:
 
     // Core API
     virtual int set(const char *key, const void *buffer, size_t size, uint32_t create_flags);
-    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);
+    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);
     virtual int get_info(const char *key, info_t *info);
     virtual int remove(const char *key);
  
@@ -114,7 +114,7 @@ public:
  
     // Key iterator
     virtual int iterator_open(iterator_t *it, const char *prefix = NULL);
-    virtual int iterator_next(iterator_t it, char *key, size_t key_size, size_t *actual_key_size);
+    virtual int iterator_next(iterator_t it, char *key, size_t key_size);
     virtual int iterator_close(iterator_t it);
     
 private:
@@ -210,7 +210,7 @@ Pseudo code:
 **get function**
 
 Header:  
-`virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);`
+`virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);`
 
 Pseudo code:  
 - if not `_is_initialized` return error
@@ -358,7 +358,7 @@ Pseudo code:
 **iterator_next function**
 
 Header:  
-`virtual int iterator_next(iterator_t it, char *key, size_t key_size, size_t *actual_key_size);`
+`virtual int iterator_next(iterator_t it, char *key, size_t key_size);`
 
 Pseudo code:
 - Take `_mutex`  
@@ -434,9 +434,8 @@ res = 0;
 KVSTore::iterator_t it;
 secure_store.iterator_open(&it, "Key*");
 char key[KVSTore::KV_MAX_KEY_LENGTH];
-size_t actual_key_size;
 while (!res) {
-    res = secure_store.iterator_next(&it, key, sizeof(key), &actual_key_size);
+    res = secure_store.iterator_next(&it, key, sizeof(key)e);
 }
 res = secure_store.iterator_close(&it);
 

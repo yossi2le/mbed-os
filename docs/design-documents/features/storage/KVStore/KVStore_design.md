@@ -44,7 +44,7 @@ KVStore is an interface class whose purpose is to define APIs for a Key Value St
 
 ## Design basics
 
-KVStore defines a simple, key value store like API set via this interface class. Classes implementing this interface store pairs of keys and values, where the keys are represented as character strings and the values are represented as binary blobs. Core APIs here are *get* and *set*, providing read and write access by key to the value in a single call. *remove* completes the set of core APIs. This simple interface allows the implementing classes to have better performance, flash wear leveling and smaller footprint (of both code and data).  
+KVStore defines a simple, key value store like API set via this interface class. Classes implementing this interface store pairs of keys and values, where the keys are represented as character strings and the values are represented as binary blobs. Core APIs here are *get* and *set*, providing read and write access by key to the value in a single call. *remove* completes the set of core APIs. This simplifies the interface for the cases we need an actual key value store (like configurations).  
 APIs also support an "incremental set" mode, allowing the implementing class to aggregate chunks of data for the set operation. This is for the case the caller needs to generate large portions of data, but doesn't wish to allocate large buffers for a single set operation. Note that *get* API doesn't have or require this functionality. Instead, it has an offset parameter (defaulting to 0) allowing the calling layer to extract portions of the data.  
 Interface also includes iteration APIs, to let the user iterate over all available keys, given a prefix.  
 As some of the implementations use files as keys, key names must comply to file naming rules, meaning that characters like * , / etc. are not allowed in key names.
@@ -52,7 +52,10 @@ As some of the implementations use files as keys, key names must comply to file 
 ### Derived implementations
 ![KVStore Classes](./KVStore_classes.jpg)
 
-KVStore currently has a few derived implementations. [TDBStore](../TDBStore/TDBStore_design.md) should be chosen as the default solution, as it gives the best performance, flash wear leveling and lowest overhead. If we already have a file system and don't wish to have an additional storage solution, or if specific POSIX features (like file seeking) are required, then [FileSystemStore](../FileSystemStore/FileSystemStore_design.md) is the preferred solution. [SecureStore](../SecureStore/SecureStore_design.md) adds security features such as encryption, rollback protection and authentication. It uses one of the other KVStore solutions as the underlying storage type.
+KVStore currently has a few derived implementations. 
+- [TDBStore](../TDBStore/TDBStore_design.md) should be chosen as the default solution, as it gives the best performance, flash wear leveling and lowest overhead for a limited number of keys.
+- [FileSystemStore](../FileSystemStore/FileSystemStore_design.md) is the preferred solution, if we already have a file system and don't wish to have an additional one, or if specific POSIX features (like file seeking) are required. It's also preferred if we don't have a limitaion for the number of keys. 
+- [SecureStore](../SecureStore/SecureStore_design.md) adds security features such as encryption, rollback protection and authentication. It uses one of the other KVStore solutions as the underlying storage type.
 
 ## Global Key Value interface
 
@@ -96,7 +99,7 @@ class KVStore {
 
     // Core API
     virtual int set(const char *key, const void *buffer, size_t size, uint32_t create_flags);
-    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);
+    virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size = NULL, size_t offset = 0);
     virtual int get_info(const char *key, info_t *info);
     virtual int remove(const char *key);
  
@@ -107,7 +110,7 @@ class KVStore {
  
     // Key iterator
     virtual int iterator_open(iterator_t *it, const char *prefix = NULL);
-    virtual int iterator_next(iterator_t it, char *key, size_t key_size, size_t *actual_key_size);
+    virtual int iterator_next(iterator_t it, char *key, size_t key_size);
     virtual int iterator_close(iterator_t it);
 }
 ```
@@ -143,7 +146,7 @@ int kv_remove(const char *full_name_key);
  
 // Key iterator
 int kv_iterator_open(kv_iterator_t *it, const char *full_prefix = nullptr);
-int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size, size_t *actual_key_size);
+int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size);
 int kv_iterator_close(kv_iterator_t it);
 ```
 
@@ -174,24 +177,24 @@ Following is the implementation of the Global Key Value interface and of the att
 typedef struct {
     KVStore *kvstore_intance;
     KVStore::set_handle_t *set_handle;
-} inc_set_handle_t;
+} kv_inc_set_handle_t;
 
 // iterator handle
 typedef struct {
     KVStore *kvstore_intance;
     KVStore::iterator_t *iterator_handle;
-} key_iterator_handle_t;
+} kv_key_iterator_handle_t;
 
 const int MAX_ATTACHED_KVS 16
 
 typedef struct {
     char *partition_name;
     KVStore *kvstore_instance;
-} kvstore_attachment_entry_t;
+} kv_map_entry_t;
 
 // Attachment table
-kvstore_attachment_entry_t kvstore_attachment_table[MAX_ATTACHED_KVS];
-int kvstore_num_attached_kvs;
+kv_map_entry_t kv_map_table[MAX_ATTACHED_KVS];
+int kv_num_attached_kvs;
 ```
 
 ### Global Key Value API implementation
@@ -238,7 +241,7 @@ Header:
 `int kv_set_start(kv_set_handle_t *handle, const char *full_name_key, size_t final_data_size);`
 
 Pseudo code:
-- Allocate an `inc_set_handle_t` structure into `handle`    
+- Allocate an `kv_inc_set_handle_t` structure into `handle`    
 - Using `kv_lookup`, break `full_name_key` into allocated `key` and `kvs_instance` (in `handle`)
 - Call `kvs_instance` `set_start` method with `key` and the rest of the arguments
 
@@ -267,14 +270,14 @@ Header:
 `int kv_iterator_open(kv_iterator_t *it, const char *full_prefix = nullptr);`
 
 Pseudo code:
-- Allocate a `key_iterator_handle_t` structure into `it`    
+- Allocate a `kv_key_iterator_handle_t` structure into `it`    
 - Using `kv_lookup`, break `full_name_key` into allocated `prefix` and `kvs_instance` (in `handle`)
 - Call `kvs_instance` `iterator_open` method with `iterator_handle`, `prefix` and the rest of the arguments
  
 **kv_iterator_next function**
 
 Header:  
-`int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size, size_t *actual_key_size);`
+`int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size);`
 
 Pseudo code:
 - Extract `kvs_instance` and `iterator_handle` from `handle`  
@@ -298,7 +301,7 @@ Header:
 `int kv_init();`
 
 Pseudo code:  
-- Set `kvstore_num_attached_kvs` to 0
+- Set `kv_num_attached_kvs` to 0
 
 **kv_attach function**
 
@@ -306,8 +309,8 @@ Header:
 `int kv_attach(const char *partition_name, KVStore *kv_instance);`
 
 Pseudo code:  
-- Duplicate `partition_name` and `kv_instance` to last entry in `kvstore_attachment_table`
-- Increment `kvstore_num_attached_kvs`
+- Duplicate `partition_name` and `kv_instance` to last entry in `kv_map_table`
+- Increment `kv_num_attached_kvs`
 
 **kv_detach function**
 
@@ -315,10 +318,10 @@ Header:
 `int kv_detach(const char *partition_name);`
 
 Pseudo code:  
-- Look for entry with `partition_name` in `kvstore_attachment_table`
+- Look for entry with `partition_name` in `kv_map_table`
 - Deallocate `partition_name` in this entry
 - Copy all preceding entries back one position
-- Decrement `kvstore_num_attached_kvs`
+- Decrement `kv_num_attached_kvs`
 
 **kv_lookup function**
 
@@ -327,7 +330,7 @@ Header:
 
 Pseudo code:
 - Break `full_name` string to `partition_name` and `key` 
-- Look for entry with `partition_name` in `kvstore_attachment_table`
+- Look for entry with `partition_name` in `kv_map_table`
 - Extract `kv_instance` from table entry
 
 # Usage scenarios and examples
@@ -383,9 +386,8 @@ res = 0;
 KVSTore::iterator_t it;
 kvstore->iterator_open(&it, "Key*");
 char key[KVSTore::KV_MAX_KEY_LENGTH];
-size_t actual_key_size;
 while (!res) {
-    res = kvstore->iterator_next(&it, key, sizeof(key), &actual_key_size);
+    res = kvstore->iterator_next(&it, key, sizeof(key));
 }
 
 // Deinitialize TDBStore
@@ -449,9 +451,8 @@ res = 0;
 kv_iterator_t it;
 kv_iterator_open(&it, "/tdbstore/Key");
 char key[KV_MAX_KEY_LENGTH];
-size_t actual_key_size;
 while (!res) {
-    res = kv_iterator_next(&it, key, sizeof(key), &actual_key_size);
+    res = kv_iterator_next(&it, key, sizeof(key));
 }
 res = kv_iterator_close(&it);
 ```
