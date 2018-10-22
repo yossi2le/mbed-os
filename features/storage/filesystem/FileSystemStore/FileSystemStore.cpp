@@ -66,7 +66,7 @@ FileSystemStore::FileSystemStore(size_t max_keys, FileSystem *fs) : _fs(fs), _ma
 {
 	memset(_cfg_fs_path, 0, FSST_PATH_NAME_SIZE);
 	strncpy(_cfg_fs_path,"$fsst$", FSST_PATH_NAME_SIZE);
-	_cfg_fs_path[FSST_PATH_NAME_SIZE] = '\0';
+	_cfg_fs_path[FSST_PATH_NAME_SIZE-1] = '\0';
 	printf("FileSystemStore CTOR Done\n");
 }
     	 
@@ -110,8 +110,8 @@ int FileSystemStore::_build_full_path_key(char *full_path_key_dst, const char *k
 {
 	strncpy(full_path_key_dst,_cfg_fs_path, FSST_PATH_NAME_SIZE);
 	strcat(full_path_key_dst,"/");
-	strncat(full_path_key_dst, key_src, FSST_MAX_KEY_SIZE);
-	full_path_key_dst[(FSST_PATH_NAME_SIZE+FSST_MAX_KEY_SIZE)] = '\0';
+	strncat(full_path_key_dst, key_src, KVStore::MAX_KEY_LENGTH);
+	full_path_key_dst[(FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH)] = '\0';
 	return 0;
 }
 
@@ -144,7 +144,7 @@ int FileSystemStore::reset()
 	int status = FSST_ERROR_OK;
 	Dir kv_dir;
 	struct dirent dir_ent;
-	char full_path_key[FSST_MAX_KEY_SIZE+FSST_PATH_NAME_SIZE+1] = {0};
+	char full_path_key[KVStore::MAX_KEY_LENGTH+FSST_PATH_NAME_SIZE+1] = {0};
 
 	_mutex.lock();
 	if (false == _is_initialized) {
@@ -165,6 +165,9 @@ int FileSystemStore::reset()
 		_fs->remove(/*dir_ent.d_name*/full_path_key);
 	}
 
+	_num_keys = 0;
+
+	/*
 	// Delete empty folder
     status = _fs->remove(_cfg_fs_path);
     if (status == 0) {
@@ -172,7 +175,7 @@ int FileSystemStore::reset()
     }
     else {
     	tr_error("Failed to remove empty KV Dir: %s", _cfg_fs_path);
-    }
+    }*/
     kv_dir.close();
 
 exit_point:
@@ -193,8 +196,15 @@ int FileSystemStore::set(const char *key, const void *buffer, size_t size, uint3
 		goto exit_point;
 	}
 
-	//strncat(full_path_key, key, FSST_MAX_KEY_SIZE);
-	//full_path_key[(FSST_MAX_KEY_SIZE+FSST_PATH_NAME_SIZE)] = '\0';
+	if ((key == NULL) || (size > KVStore::MAX_KEY_LENGTH)|| ((buffer == NULL) && (size > 0)) ) {
+		status = FSST_ERROR_INVALID_INPUT;
+		goto exit_point;
+	}
+
+	//strncat(full_path_key, key, KVStore::MAX_KEY_LENGTH);
+	//full_path_key[(KVStore::MAX_KEY_LENGTH+FSST_PATH_NAME_SIZE)] = '\0';
+
+	printf("About to Set Data - value: %s, size: %d\n", buffer, size);
 
 	status = set_start(&handle, key, size, create_flags);
 	if (status != FSST_ERROR_OK) {
@@ -223,11 +233,15 @@ exit_point:
 int FileSystemStore::_verify_key_file(const char *key, key_metadata_t *key_metadata, File *kv_file)
 {
 	int status = FSST_ERROR_OK;
-
-	char full_path_key[FSST_PATH_NAME_SIZE+FSST_MAX_KEY_SIZE+1] = {0};
-	_build_full_path_key(full_path_key, key);
-
+	char full_path_key[FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1] = {0};
 	uint32_t file_size = 0;
+
+	if (key == NULL) {
+		status = FSST_ERROR_INVALID_INPUT;
+		goto exit_point;
+	}
+
+	_build_full_path_key(full_path_key, key);
 
 	if (0 != kv_file->open(_fs, /*key*/ full_path_key, O_RDONLY) ) {
 	  tr_error("Couldn't read: %s", full_path_key);
@@ -267,16 +281,25 @@ int FileSystemStore::get(const char *key, void *buffer, size_t buffer_size, size
 
 	key_metadata_t key_metadata;
 
-
 	if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) != FSST_ERROR_OK ) {
 		tr_error("File Verification Failed: %s, status: %d", key, status);
 		goto exit_point;
 	}
 
+
 	// Actual size is the minimum of buffer_size and remainder of data in file (data_size-offset)
 	value_actual_size = buffer_size;
-	if ((key_metadata.data_size-offset) < buffer_size) {
+	if (offset > key_metadata.data_size) {
+		status = FSST_ERROR_CORRUPTED_DATA;
+		goto exit_point;
+	}
+	else if ((key_metadata.data_size-offset) < buffer_size) {
 		value_actual_size = key_metadata.data_size - offset;
+	}
+
+	if ((buffer == NULL) && (value_actual_size > 0)){
+		status = FSST_ERROR_CORRUPTED_DATA;
+		goto exit_point;
 	}
 
 	if (actual_size != NULL) {
@@ -288,7 +311,8 @@ int FileSystemStore::get(const char *key, void *buffer, size_t buffer_size, size
 	kv_file.read(buffer, value_actual_size);
 
 exit_point:
-	if (status == FSST_ERROR_OK) {
+	if ( (status == FSST_ERROR_OK) ||
+	   (status == FSST_ERROR_CORRUPTED_DATA) ){
 		kv_file.close();
 	}
 	_mutex.unlock();
@@ -300,11 +324,16 @@ int FileSystemStore::get_info(const char *key, info_t *info)
 {
 	int status = FSST_ERROR_OK;
 
-	char full_path_key[FSST_PATH_NAME_SIZE+FSST_MAX_KEY_SIZE+1] = {0};
+	if (info == NULL) {
+		return FSST_ERROR_INVALID_INPUT;
+	}
+
+	char full_path_key[FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1] = {0};
 	_build_full_path_key(full_path_key, key);
 	File kv_file;
 
 	_mutex.lock();
+
 	if (false == _is_initialized) {
 		status = FSST_ERROR_NOT_INITIALIZED;
 		goto exit_point;
@@ -312,9 +341,8 @@ int FileSystemStore::get_info(const char *key, info_t *info)
 
 	key_metadata_t key_metadata;
 
-	if (FSST_ERROR_OK != _verify_key_file(key, &key_metadata, &kv_file)) {
-		tr_error("File Verification Failed: %s", key);
-		status = FSST_ERROR_CORRUPTED_DATA;
+	if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) != FSST_ERROR_OK ) {
+		tr_error("File Verification Failed: %s, status: %d", key, status);
 		goto exit_point;
 	}
 
@@ -332,18 +360,27 @@ exit_point:
 
 int FileSystemStore::remove(const char *key)
 {
-	char full_path_key[FSST_PATH_NAME_SIZE+FSST_MAX_KEY_SIZE+1] = {0};
+
+	if (key == NULL) {
+		return FSST_ERROR_INVALID_INPUT;
+	}
+
+	char full_path_key[FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1] = {0};
 	_build_full_path_key(full_path_key, key);
 
 	_mutex.lock();
+	int status = FSST_ERROR_OK;
 	if (false == _is_initialized) {
-		return FSST_ERROR_NOT_INITIALIZED;
+		status = FSST_ERROR_NOT_INITIALIZED;
+		goto exit_point;
 	}
 
-    int status = _fs->remove(/*key */full_path_key);
+    status = _fs->remove(/*key */full_path_key);
     if (status == 0) {
     	_num_keys--;
     }
+
+exit_point:
 	_mutex.unlock();
 	return status;
 }
@@ -351,7 +388,7 @@ int FileSystemStore::remove(const char *key)
 // Incremental set API
 int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t final_data_size, uint32_t create_flags)
 {
-	char full_path_key[FSST_PATH_NAME_SIZE+FSST_MAX_KEY_SIZE+1] = {0};
+	char full_path_key[FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1] = {0};
 	_build_full_path_key(full_path_key, key);
 
 	File kv_file;
@@ -367,17 +404,18 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
 		kv_file.close();
 	}
 
-	if (0 !=kv_file.open(_fs, full_path_key, O_WRONLY|O_CREAT|O_TRUNC)) {
-		tr_warning("set_start failed to open: %s, for writing", full_path_key);
+	int status = FSST_ERROR_OK;
+	if ( (status = kv_file.open(_fs, full_path_key, O_WRONLY|O_CREAT|O_TRUNC)) != FSST_ERROR_OK ){
+		tr_warning("set_start failed to open: %s, for writing, err: %d", full_path_key, status);
 		return FSST_ERROR_FS_OPERATION_FAILED;
 	}
 
 	inc_set_handle_t *set_handle = new inc_set_handle_t;
 	set_handle->create_flags = create_flags;
 	set_handle->data_size = final_data_size;
-	set_handle->key = new char[strnlen(key, FSST_MAX_KEY_SIZE)];
-    strncpy(set_handle->key, key, FSST_MAX_KEY_SIZE);
-    set_handle->key[FSST_MAX_KEY_SIZE] = '\0';
+	set_handle->key = new char[strnlen(key, KVStore::MAX_KEY_LENGTH)];
+    strncpy(set_handle->key, key, KVStore::MAX_KEY_LENGTH);
+    set_handle->key[KVStore::MAX_KEY_LENGTH-1] = '\0';
 
     *handle = (set_handle_t)set_handle;
 
@@ -397,7 +435,7 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
 
 int FileSystemStore::set_add_data(set_handle_t handle, const void *value_data, size_t data_size)
 {
-	char full_path_key[FSST_PATH_NAME_SIZE+FSST_MAX_KEY_SIZE+1] = {0};
+	char full_path_key[FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1] = {0};
 	inc_set_handle_t *set_handle = (inc_set_handle_t *)handle;
 	_build_full_path_key(full_path_key, set_handle->key);
 
@@ -412,7 +450,11 @@ int FileSystemStore::set_add_data(set_handle_t handle, const void *value_data, s
 		return FSST_ERROR_FS_OPERATION_FAILED;
 	}
 
-	kv_file.write(value_data, data_size);
+	/* OFR_DBG */
+	printf("About to Write Data - value: %s, size: %d\n",value_data, data_size);
+	int err = kv_file.write(value_data, data_size);
+	printf("Wrote Data - value: %s, size: %d, err: %d\n",value_data, data_size, err);
+
 	kv_file.close();
     return FSST_ERROR_OK;
 
@@ -454,9 +496,9 @@ int FileSystemStore::iterator_open(iterator_t *it, const char *prefix)
     key_it->dir_handle = NULL;
     key_it->prefix = NULL;
     if (prefix != NULL) {
-    	key_it->prefix = new char[FSST_MAX_KEY_SIZE+1];
-    	strncpy(key_it->prefix, prefix, FSST_MAX_KEY_SIZE);
-    	key_it->prefix[FSST_MAX_KEY_SIZE] = '\0';
+    	key_it->prefix = new char[KVStore::MAX_KEY_LENGTH+1];
+    	strncpy(key_it->prefix, prefix, KVStore::MAX_KEY_LENGTH);
+    	key_it->prefix[KVStore::MAX_KEY_LENGTH-1] = '\0';
     }
 
     kv_dir = new Dir;
@@ -486,6 +528,10 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 	struct dirent kv_dir_ent;
 	int status = FSST_ERROR_NOT_FOUND;
 	key_iterator_handle_t *key_it = NULL;
+	int key_name_size = KVStore::MAX_KEY_LENGTH;
+	if (key_size < key_name_size) {
+		key_name_size = key_size;
+	}
 
 	_mutex.lock();
 	if (false == _is_initialized) {
@@ -499,6 +545,7 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 	while (kv_dir->read(&kv_dir_ent) != 0 ) {
 		if (kv_dir_ent.d_type != DT_REG) {
 			tr_error("KV_Dir should contain only Regular File - %s", kv_dir_ent.d_name);
+			continue;
 		}
 
 		//_build_full_path_key(full_path_key, kv_dir_ent.d_name); //Is it required or name is already full path?
@@ -508,9 +555,10 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 	//	}
 
 		if ( (key_it->prefix == NULL) ||
-			 (strncmp(kv_dir_ent.d_name, key_it->prefix, strnlen(key_it->prefix, FSST_MAX_KEY_SIZE)) != 0) ) {
-			strncpy(key, kv_dir_ent.d_name, FSST_MAX_KEY_SIZE);
-			key[FSST_MAX_KEY_SIZE] = '\0';
+			 (strncmp(kv_dir_ent.d_name, key_it->prefix, strnlen(key_it->prefix, key_name_size-1)) == 0) ) {
+			printf("File Name: %s, name size: %d\n", kv_dir_ent.d_name, key_name_size-1);
+			strncpy(key, kv_dir_ent.d_name, key_name_size);
+			key[key_name_size-1] = '\0';
 			status = FSST_ERROR_OK;
 			break;
 		}
