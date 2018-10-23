@@ -139,7 +139,7 @@ public:
     virtual int iterator_close(iterator_t it);
     
 private:
-    int _build_full_path_key(char *full_path_key_dst, const char *key_stc);
+    int _build_full_path_key(const char *key_stc);
     int _verify_key_file(const char *key, key_metadata_t *key_metadata, File *kv_file);
     int _strip_full_path_from_key(char **stripped_key_ptr_dst, char *full_path_key_src);
 
@@ -151,6 +151,7 @@ private:
     size_t _num_keys;
     bool _is_initialized;
 	char _cfg_fs_path[FSST_PATH_NAME_SIZE+1];
+	char _full_path_key[FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1];
 };
 
 
