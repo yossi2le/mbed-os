@@ -21,12 +21,64 @@
 
 #define FSST_REVISION 1
 #define FSST_MAGIC 0x46535354 // "FSST" hex 'magic' signature
+//#define FSST_MAX_KEY_SIZE 256
 #define FSST_PATH_NAME_SIZE 16
-#ifndef FSST_FOLDER_PATH
-#define FSST_FOLDER_PATH "$fsst$" //default FileSystemStore folder path on fs
-#endif
+
+/* FROM KV_STORE */
+/*typedef struct _opaque_set_handle *set_handle_t;
+
+    typedef struct _opaque_key_iterator *iterator_t;
+
+    typedef struct info {
+        size_t size;
+        uint32_t flags;
+    } info_t;
+
+
+
+    // Key metadata
+    typedef struct {
+        uint32_t magic;
+        uint16_t metadata_size;
+        uint16_t revision;
+        uint32_t user_flags;
+        uint32_t data_size;
+    } key_metadata_t;
+
+    // incremental set handle
+    typedef struct {
+        char *key;
+        uint32_t create_flags;
+        uint32_t data_size;
+    } inc_set_handle_t;
+
+    // iterator handle
+    typedef struct {
+        void *dir_handle;
+        char *prefix;
+    } key_iterator_handle_t;
+
+*/
+
 
 namespace mbed {
+
+/** Enum FSSTF standard error codes
+ *
+ *  @enum FSSTF_bd_error
+ */
+enum FSST_bd_error {
+    FSST_ERROR_OK               	 = 0,     /*!< no error */
+    FSST_ERROR_NOT_INITIALIZED  	 = -1,
+    FSST_ERROR_MAX_KEYS_REACHED 	 = -2,
+    FSST_ERROR_NOT_FOUND		     = -3,
+    FSST_ERROR_FS_OPERATION_FAILED   = -4,
+    FSST_ERROR_INVALID_INPUT		 = -5,
+    FSST_ERROR_CORRUPTED_DATA		 = -6,
+    FSST_ERROR_WRITE_ONCE			 = -7
+};
+
+
 
 //Important data structures
 // Key metadata
@@ -35,6 +87,7 @@ typedef struct {
     uint16_t metadata_size;
     uint16_t revision;
     uint32_t user_flags;
+    uint32_t data_size;
 } key_metadata_t;
 
 // incremental set handle
@@ -57,171 +110,49 @@ typedef struct {
  *  ...
  *  @endcode
  */
+
 class FileSystemStore : KVStore {
 
 public:
-    /** Create FileSystemStore - A Key Value API on top of FS
-     *
-     *  @param fs File system on top which File System Store is adding KV API
-     */
-    FileSystemStore(FileSystem *fs);
-
-    /** Destroy FileSystemStore instance
-     *
-     */
-    virtual ~FileSystemStore() {}
-
-    /**
-      * @brief Initialize FileSystemStore
-      *
-      * @returns 0 on success or a negative error code on failure
-      */
+    FileSystemStore(size_t max_keys, FileSystem *fs);
+    virtual ~FileSystemStore(){}
+    	 
+    // Initialization and reset
     virtual int init();
-
-    /**
-      * @brief Deinitialize FileSystemStore
-      *
-      * @returns 0 on success or a negative error code on failure
-      */
     virtual int deinit();
-
-    /**
-     * @brief Reset FileSystemStore contents (clear all keys)
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
     virtual int reset();
 
-    /**
-     * @brief Set one FileSystemStore item, given key and value.
-     *
-     * @param[in]  key                  Key.
-     * @param[in]  buffer               Value data buffer.
-     * @param[in]  size                 Value data size.
-     * @param[in]  create_flags         Flag mask.
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
+    // Core API
     virtual int set(const char *key, const void *buffer, size_t size, uint32_t create_flags);
-
-    /**
-      * @brief Get one FileSystemStore item, given key.
-      *
-      * @param[in]  key                  Key.
-      * @param[in]  buffer               Value data buffer.
-      * @param[in]  buffer_size          Value data buffer size.
-      * @param[out] actual_size          Actual read size.
-      * @param[in]  offset               Offset to read from in data.
-      *
-      * @returns 0 on success or a negative error code on failure
-      */
     virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);
-
-    /**
-     * @brief Get information of a given key.
-     *
-     * @param[in]  key                  Key.
-     * @param[out] info                 Returned information structure.
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
     virtual int get_info(const char *key, info_t *info);
-
-    /**
-     * @brief Remove a FileSystemStore item, given key.
-     *
-     * @param[in]  key                  Key.
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
     virtual int remove(const char *key);
-
-    /**
-     * @brief Start an incremental FileSystemStore set sequence.
-     *
-     * @param[out] handle               Returned incremental set handle.
-     * @param[in]  key                  Key.
-     * @param[in]  final_data_size      Final value data size.
-     * @param[in]  create_flags         Flag mask.
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
+ 
+    // Incremental set API
     virtual int set_start(set_handle_t *handle, const char *key, size_t final_data_size, uint32_t create_flags);
-
-    /**
-     * @brief Add data to incremental FileSystemStore set sequence.
-     *
-     * @param[in]  handle               Incremental set handle.
-     * @param[in]  value_data           value data to add.
-     * @param[in]  data_size            value data size.
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
     virtual int set_add_data(set_handle_t handle, const void *value_data, size_t data_size);
-
-    /**
-     * @brief Finalize an incremental FileSystemStore set sequence.
-     *
-     * @param[in]  handle               Incremental set handle.
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
     virtual int set_finalize(set_handle_t handle);
-
-    /**
-     * @brief Start an iteration over FileSystemStore keys.
-     *
-     * @param[out] it                   Returned iterator handle.
-     * @param[in]  prefix               Key prefix (null for all keys).
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
+ 
+    // Key iterator
     virtual int iterator_open(iterator_t *it, const char *prefix = NULL);
-
-    /**
-     * @brief Get next key in iteration.
-     *
-     * @param[in]  it                   Iterator handle.
-     * @param[in]  key                  Buffer for returned key.
-     * @param[in]  key_size             Key buffer size.
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
     virtual int iterator_next(iterator_t it, char *key, size_t key_size);
-
-    /**
-     * @brief Close iteration.
-     *
-     * @param[in]  it                   Iterator handle.
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
     virtual int iterator_close(iterator_t it);
-
+    
 private:
-
-    /**
-     * Build Full name of Key as a combination of FSST folder and key name
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
-    int _build_full_path_key(const char *key_src);
-
-    /**
-     * Verify Key file validity
-     *
-     * @returns 0 on success or a negative error code on failure
-     */
+    int _build_full_path_key(const char *key_stc);
     int _verify_key_file(const char *key, key_metadata_t *key_metadata, File *kv_file);
+    int _strip_full_path_from_key(char **stripped_key_ptr_dst, char *full_path_key_src);
 
 private:
     FileSystem *_fs;
     PlatformMutex _mutex;
 
+    size_t _max_keys;
+    size_t _num_keys;
     bool _is_initialized;
-    char _cfg_fs_path[FSST_PATH_NAME_SIZE + 1]; /* FileSystemStore path on FileSystem */
-    char _full_path_key[FSST_PATH_NAME_SIZE + KVStore::MAX_KEY_SIZE + 1]; /* Full name of Key file currently working on */
-    size_t _cur_inc_data_size; /* Amount of data added to Key file so far, during incremental add data */
+	char _cfg_fs_path[FSST_PATH_NAME_SIZE+1];
+	char _full_path_key[FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1];
+	size_t _cur_inc_data_size;
 };
 
 
