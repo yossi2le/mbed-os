@@ -23,45 +23,8 @@
 #define TRACE_GROUP "FSST"
 
 using namespace mbed;
-//namespace mbed {
-/** Enum FSSTF standard error codes
- *
- *  @enum FSSTF_bd_error
- */
- 
-// enum FSSTF_bd_error {
-//     FSST_ERROR_OK                    = 0,     /*!< no error */
-// };
 
 
-// Important data structures
-// Key metadata
-// typedef struct {
-//     uint32_t magic;
-//     uint16_t metadata_size;
-//     uint16_t revision;
-//     uint32_t user_flags;
-//     uint32_t data_size;
-// } key_metadata_t;
-
-// incremental set handle
-// typedef struct {
-//     char *key;
-//     uint32_t create_flags;
-// } inc_set_handle_t;
-
-// iterator handle
-// typedef struct {
-//     void *dir_handle;
-//     char *prefix;
-// } key_iterator_handle_t;
-
-/** FileSystemStore for Secure Store
- *
- *  @code
- *  ...
- *  @endcode
- */
 FileSystemStore::FileSystemStore(size_t max_keys, FileSystem *fs) : _fs(fs), _max_keys(max_keys), _num_keys(0), _is_initialized(false)
 {
 	memset(_cfg_fs_path, 0, FSST_PATH_NAME_SIZE+1);
@@ -70,6 +33,7 @@ FileSystemStore::FileSystemStore(size_t max_keys, FileSystem *fs) : _fs(fs), _ma
 	memset(_full_path_key, 0, FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1);
 	strncpy(_full_path_key, _cfg_fs_path, FSST_PATH_NAME_SIZE);
 	strcat(_full_path_key,"/");
+	_cur_inc_data_size = 0;
 }
     	 
 // Initialization and reset
@@ -78,7 +42,6 @@ int FileSystemStore::init()
   int status = FSST_ERROR_OK;
 
   printf("FileSystemStore Init Enter\n");
-
   _mutex.lock();
 
   Dir kv_dir;
@@ -102,6 +65,7 @@ int FileSystemStore::init()
   
   _is_initialized = true;
 exit_point:
+
   _mutex.unlock();
 
   return status;
@@ -159,7 +123,7 @@ int FileSystemStore::reset()
 			tr_error("KV_Dir should contain only Regular File - %s", dir_ent.d_name);
 			continue;
 		}
-		// Build File's full path name and delete it
+		// Build File's full path name and delete it (even if write-onced)
 		_build_full_path_key(dir_ent.d_name);
 		_fs->remove(/*dir_ent.d_name*/_full_path_key);
 	}
@@ -264,7 +228,12 @@ int FileSystemStore::get(const char *key, void *buffer, size_t buffer_size, size
 	File kv_file;
 	size_t value_actual_size = 0;
 
-	_mutex.lock();
+	osStatus mtx = _mutex.lock();
+
+	if (osOK != mtx) {
+		printf("Lock Failed!!!!!!\n");
+	}
+
 	if (false == _is_initialized) {
 		status = FSST_ERROR_NOT_INITIALIZED;
 		goto exit_point;
@@ -349,6 +318,8 @@ exit_point:
 
 int FileSystemStore::remove(const char *key)
 {
+	File kv_file;
+    key_metadata_t key_metadata;
 
 	if (key == NULL) {
 		return FSST_ERROR_INVALID_INPUT;
@@ -358,11 +329,22 @@ int FileSystemStore::remove(const char *key)
 
 	int status = FSST_ERROR_OK;
 
-	_build_full_path_key(key);
 	if (false == _is_initialized) {
 		status = FSST_ERROR_NOT_INITIALIZED;
 		goto exit_point;
 	}
+
+	/* If File Exists and is Valid, then check its Write Once Flag to verify its disabled before removing */
+	/* If File exists and is not valid, or is Valid and not Write-Onced then remove it */
+	if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) == FSST_ERROR_OK ) {
+		tr_error("File: %s, Exists Verifying Write Once Disabled before setting new value", _full_path_key);
+		if (key_metadata.user_flags & KVStore::WRITE_ONCE_FLAG) {
+			kv_file.close();
+			status = FSST_ERROR_WRITE_ONCE;
+			goto exit_point;
+		}
+	}
+	kv_file.close();
 
     status = _fs->remove(/*key */_full_path_key);
 /* For NUM Keys support only */
@@ -382,23 +364,48 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
 	inc_set_handle_t *set_handle = NULL;
 	File kv_file;
     key_metadata_t key_metadata;
+    int key_len = 0;
 
-	_mutex.lock();
+    osStatus mtx = _mutex.lock();
 
-	_build_full_path_key(key);
+	if (osOK != mtx) {
+		printf("Lock Failed!!!!!!\n");
+	}
 
-/* For Max Keys use */
-//	if (0 !=kv_file.open(_fs, full_path_key, O_RDONLY)) {
-//		tr_warning("set_start open(verify exist): %s, does not exist", full_path_key);
-//		if (_num_keys == _max_keys) {
-//			return FSST_ERROR_MAX_KEYS_REACHED;
-//		}
-//		_num_keys++;
-//	}
-//	else {
-//		tr_warning("set_start open(verify exist): %s, exists - now closing", full_path_key);
-//		kv_file.close();
-//	}
+
+	if ((key == NULL) || (handle == NULL) ) {
+		status = FSST_ERROR_INVALID_INPUT;
+		goto exit_point;
+	}
+
+	/* If File Exists and is Valid, then check its Write Once Flag to verify its disabled before setting */
+	/* If File exists and is not valid, or is Valid and not Write-Onced then erase it */
+	if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) == FSST_ERROR_OK ) {
+		tr_error("File: %s, Exists Verifying Write Once Disabled before setting new value", _full_path_key);
+		if (key_metadata.user_flags & KVStore::WRITE_ONCE_FLAG) {
+			kv_file.close();
+			status = FSST_ERROR_WRITE_ONCE;
+			goto exit_point;
+		}
+	}
+	kv_file.close();
+
+	/* For Max Keys use */
+	/*
+	if (0 !=kv_file.open(_fs, full_path_key, O_RDONLY)) {
+		tr_warning("set_start open(verify exist): %s, does not exist - Setting New File", full_path_key);
+
+		if (_num_keys == _max_keys) {
+			return FSST_ERROR_MAX_KEYS_REACHED;
+		}
+		_num_keys++;
+	}
+	else {
+		tr_warning("set_start open(verify exist): %s, exists - verifyin Write Once disabled", full_path_key);
+
+		kv_file.close();
+	}
+	*/
 
 
 	if ( (status = kv_file.open(_fs, _full_path_key, O_WRONLY|O_CREAT|O_TRUNC)) != FSST_ERROR_OK ){
@@ -406,14 +413,15 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
 		status = FSST_ERROR_FS_OPERATION_FAILED;
 		goto exit_point;
 	}
+	_cur_inc_data_size = 0;
 
 	set_handle = new inc_set_handle_t;
 	set_handle->create_flags = create_flags;
 	set_handle->data_size = final_data_size;
-	set_handle->key = new char[strnlen(key, KVStore::MAX_KEY_LENGTH)];
-    strncpy(set_handle->key, key, KVStore::MAX_KEY_LENGTH);
-    set_handle->key[KVStore::MAX_KEY_LENGTH-1] = '\0';
-
+	key_len = strnlen(key, KVStore::MAX_KEY_LENGTH);
+	set_handle->key = new char[key_len];
+    strncpy(set_handle->key, key, key_len);
+    set_handle->key[key_len] = '\0';
     *handle = (set_handle_t)set_handle;
 
     key_metadata.magic = FSST_MAGIC;
@@ -421,9 +429,7 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
     key_metadata.revision = FSST_REVISION;
     key_metadata.user_flags = create_flags;
     key_metadata.data_size = final_data_size;
-
     kv_file.write(&key_metadata, sizeof(key_metadata_t));
-
     kv_file.close();
 exit_point:
     if (status != FSST_ERROR_OK) {
@@ -434,52 +440,69 @@ exit_point:
 
 int FileSystemStore::set_add_data(set_handle_t handle, const void *value_data, size_t data_size)
 {
-	inc_set_handle_t *set_handle = (inc_set_handle_t *)handle;
-	_build_full_path_key(set_handle->key);
 	int status = FSST_ERROR_OK;
-
+	size_t added_data = 0;
+	inc_set_handle_t *set_handle = (inc_set_handle_t *)handle;
 	File kv_file;
-	if (0 != kv_file.open(_fs, /*set_handle->key*/ _full_path_key, O_RDONLY)) {
+
+	if ((value_data == NULL) || (handle == NULL) ) {
+		status = FSST_ERROR_INVALID_INPUT;
+		goto exit_point;
+	}
+
+	if ( (_cur_inc_data_size + data_size) > set_handle->data_size ) {
+		tr_error("Added Data exceeds set_start final size - corrupted data, deleteing file: %s", _full_path_key);
+		_fs->remove(_full_path_key);
+		status = FSST_ERROR_CORRUPTED_DATA;
+		goto exit_point;
+	}
+
+	if (0 != kv_file.open(_fs, /*set_handle->key*/ _full_path_key, O_WRONLY|O_APPEND)) {
 		status = FSST_ERROR_NOT_FOUND;
 		goto exit_point;
 	}
-	kv_file.close();
 
-	if (0 != kv_file.open(_fs, /*set_handle->key*/ _full_path_key, O_WRONLY|O_APPEND)) {
+	added_data = kv_file.write(value_data, data_size);
+	if (added_data != data_size) {
 		status = FSST_ERROR_FS_OPERATION_FAILED;
-		goto exit_point;
 	}
-
-	kv_file.write(value_data, data_size);
+	_cur_inc_data_size += added_data;
 
 	kv_file.close();
 
 exit_point:
-    if (status != FSST_ERROR_OK) {
-    	_mutex.unlock();
-    }
-    return FSST_ERROR_OK;
+
+    return status;
 
 }
 
 int FileSystemStore::set_finalize(set_handle_t handle)
 {
 	int status = FSST_ERROR_OK;
-	inc_set_handle_t *set_handle = (inc_set_handle_t *)handle;
+	inc_set_handle_t *set_handle = NULL;
 
-	if (set_handle == NULL) {
+	if (handle == NULL) {
 		status =  FSST_ERROR_INVALID_INPUT;
 		goto exit_point;
 	}
 
+	set_handle = (inc_set_handle_t *)handle;
+
 	if (set_handle->key == NULL) {
-		status = FSST_ERROR_INVALID_INPUT;
+		status = FSST_ERROR_CORRUPTED_DATA;
 	}
 	else {
+		if (_cur_inc_data_size != set_handle->data_size ) {
+			tr_error("Added Data doesn't match set_start final size - corrupted data, deleteing file: %s", _full_path_key);
+			_fs->remove(_full_path_key);
+			status = FSST_ERROR_CORRUPTED_DATA;
+		}
+
 		delete set_handle->key;
 	}
 
 	delete set_handle;
+	_cur_inc_data_size = 0;
 
 exit_point:
 	if (status != FSST_ERROR_INVALID_INPUT) {
@@ -517,6 +540,11 @@ int FileSystemStore::iterator_open(iterator_t *it, const char *prefix)
     kv_dir = new Dir;
     if (kv_dir->open(_fs, _cfg_fs_path) != 0) {
         tr_error("KV Dir: %s, doesnt exist", _cfg_fs_path); //TBD verify ERRNO NOEXIST
+        delete kv_dir;
+        if (key_it->prefix != NULL) {
+        	delete key_it->prefix;
+        }
+        delete key_it;
         status = FSST_ERROR_NOT_FOUND;
         goto exit_point;
     }
@@ -549,6 +577,12 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 	}
 
 	key_it = (key_iterator_handle_t *)it;
+
+	if (key_name_size < strlen(key_it->prefix)) {
+		status = FSST_ERROR_INVALID_INPUT;
+		goto exit_point;
+	}
+
 	kv_dir = (Dir *)key_it->dir_handle;
 
 	while (kv_dir->read(&kv_dir_ent) != 0 ) {
@@ -563,14 +597,14 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 //			tr_error("Found filed in KV Dir with ");
 	//	}
 
-		/* original size parameter was 0 meaning dont care about name just whether file exists in dir*/
-		if (key_name_size == 0) {
-			status = FSST_ERROR_OK;
-			break;
-		}
-		else if ( (key_it->prefix == NULL) ||
+
+		if ( (key_it->prefix == NULL) ||
 			 (strncmp(kv_dir_ent.d_name, key_it->prefix, strnlen(key_it->prefix, key_name_size-1)) == 0) ) {
-			printf("File Name: %s, name size: %d\n", kv_dir_ent.d_name, key_name_size-1);
+			printf("File Name: %s, File name size: %d, name size: %d\n", kv_dir_ent.d_name, strlen(kv_dir_ent.d_name), key_name_size-1);
+			if (key_name_size < strlen(kv_dir_ent.d_name)) {
+				status = FSST_ERROR_INVALID_INPUT;
+				break;
+			}
 			strncpy(key, kv_dir_ent.d_name, key_name_size);
 			key[key_name_size-1] = '\0';
 			status = FSST_ERROR_OK;
@@ -611,5 +645,4 @@ exit_point:
 	return status;
 }
 
-//} //namespace mbed
 
