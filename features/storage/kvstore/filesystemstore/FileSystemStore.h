@@ -27,20 +27,21 @@
 
 namespace mbed {
 
-/** Enum FSST standard error codes
+/** Enum FSST standard status error codes
  *
  *  @enum FSST
  */
-enum FSST_error {
+typedef enum {
     FSST_ERROR_OK               	 = 0,     /*!< no error */
-    FSST_ERROR_NOT_INITIALIZED  	 = -1,
-    FSST_ERROR_MAX_KEYS_REACHED 	 = -2,
     FSST_ERROR_NOT_FOUND		     = -3,
-    FSST_ERROR_FS_OPERATION_FAILED   = -4,
+    FSST_ERROR_CORRUPTED_DATA		 = -4,
     FSST_ERROR_INVALID_INPUT		 = -5,
-    FSST_ERROR_CORRUPTED_DATA		 = -6,
-    FSST_ERROR_WRITE_ONCE			 = -7
-};
+    FSST_ERROR_FS_OPERATION_FAILED   = -7,
+    FSST_ERROR_WRITE_ONCE			 = -8,
+    FSST_ERROR_MAX_KEYS_REACHED 	 = -11,
+    FSST_ERROR_NOT_INITIALIZED  	 = -12
+}FSST_status_e;
+
 
 //Important data structures
 // Key metadata
