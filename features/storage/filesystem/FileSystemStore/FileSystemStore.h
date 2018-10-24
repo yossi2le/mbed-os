@@ -75,7 +75,7 @@ enum FSST_bd_error {
     FSST_ERROR_FS_OPERATION_FAILED   = -4,
     FSST_ERROR_INVALID_INPUT		 = -5,
     FSST_ERROR_CORRUPTED_DATA		 = -6,
-
+    FSST_ERROR_WRITE_ONCE			 = -7
 };
 
 
@@ -152,6 +152,7 @@ private:
     bool _is_initialized;
 	char _cfg_fs_path[FSST_PATH_NAME_SIZE+1];
 	char _full_path_key[FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1];
+	size_t _cur_inc_data_size;
 };
 
 
