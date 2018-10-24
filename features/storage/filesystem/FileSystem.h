@@ -25,8 +25,6 @@
 #include "platform/FileSystemLike.h"
 #include "BlockDevice.h"
 
-//#include "FileSystemStore.h"
-
 namespace mbed {
 /** \addtogroup filesystem */
 /** @{*/
@@ -39,7 +37,6 @@ typedef void *fs_dir_t;
 // Predeclared classes
 class Dir;
 class File;
-//class FileSystemStore;
 
 /** A filesystem object provides filesystem operations and file operations
  *  for the File and Dir classes on a block device.
@@ -139,7 +136,6 @@ public:
 protected:
     friend class File;
     friend class Dir;
-    friend class FileSystemStore;
 
     /** Open a file on the filesystem
      *
