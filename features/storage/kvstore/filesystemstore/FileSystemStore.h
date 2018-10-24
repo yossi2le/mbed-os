@@ -40,7 +40,7 @@ typedef enum {
     FSST_ERROR_WRITE_ONCE			 = -8,
     FSST_ERROR_MAX_KEYS_REACHED 	 = -11,
     FSST_ERROR_NOT_INITIALIZED  	 = -12
-}FSST_status_e;
+} FSST_status_e;
 
 
 //Important data structures
