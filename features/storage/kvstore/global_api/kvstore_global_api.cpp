@@ -18,6 +18,8 @@
 #include "kv_map.h"
 #include "KVStore.h"
 
+using namespace mbed;
+
 // iterator handle
 struct _opaque_kv_key_iterator{
     KVStore *kvstore_intance;

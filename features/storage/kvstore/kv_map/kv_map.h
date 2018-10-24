@@ -20,11 +20,11 @@
 
 // Attach and detach
 int kv_init();
-int kv_attach(const char *partition_name, KVStore *kv_instance);
+int kv_attach(const char *partition_name, mbed::KVStore *kv_instance);
 int kv_detach(const char *partition_name);
 int kv_deinit();
 
 // Full name lookup and then break it into KVStore instance and key
-int kv_lookup(const char *full_name, KVStore **kv_instance, char *key);
+int kv_lookup(const char *full_name, mbed::KVStore **kv_instance, char *key);
 
 #endif
