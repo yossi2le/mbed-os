@@ -21,53 +21,17 @@
 
 #define FSST_REVISION 1
 #define FSST_MAGIC 0x46535354 // "FSST" hex 'magic' signature
-//#define FSST_MAX_KEY_SIZE 256
 #define FSST_PATH_NAME_SIZE 16
-
-/* FROM KV_STORE */
-/*typedef struct _opaque_set_handle *set_handle_t;
-
-    typedef struct _opaque_key_iterator *iterator_t;
-
-    typedef struct info {
-        size_t size;
-        uint32_t flags;
-    } info_t;
-
-
-
-    // Key metadata
-    typedef struct {
-        uint32_t magic;
-        uint16_t metadata_size;
-        uint16_t revision;
-        uint32_t user_flags;
-        uint32_t data_size;
-    } key_metadata_t;
-
-    // incremental set handle
-    typedef struct {
-        char *key;
-        uint32_t create_flags;
-        uint32_t data_size;
-    } inc_set_handle_t;
-
-    // iterator handle
-    typedef struct {
-        void *dir_handle;
-        char *prefix;
-    } key_iterator_handle_t;
-
-*/
+#define FSST_MAX_KEYS 256
 
 
 namespace mbed {
 
-/** Enum FSSTF standard error codes
+/** Enum FSST standard error codes
  *
- *  @enum FSSTF_bd_error
+ *  @enum FSST
  */
-enum FSST_bd_error {
+enum FSST_error {
     FSST_ERROR_OK               	 = 0,     /*!< no error */
     FSST_ERROR_NOT_INITIALIZED  	 = -1,
     FSST_ERROR_MAX_KEYS_REACHED 	 = -2,
@@ -77,8 +41,6 @@ enum FSST_bd_error {
     FSST_ERROR_CORRUPTED_DATA		 = -6,
     FSST_ERROR_WRITE_ONCE			 = -7
 };
-
-
 
 //Important data structures
 // Key metadata
@@ -114,9 +76,9 @@ typedef struct {
 class FileSystemStore : KVStore {
 
 public:
-    FileSystemStore(size_t max_keys, FileSystem *fs);
-    virtual ~FileSystemStore(){}
-    	 
+    FileSystemStore(/*size_t max_keys,*/ FileSystem *fs);
+    virtual ~FileSystemStore() {}
+
     // Initialization and reset
     virtual int init();
     virtual int deinit();
@@ -127,17 +89,17 @@ public:
     virtual int get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset = 0);
     virtual int get_info(const char *key, info_t *info);
     virtual int remove(const char *key);
- 
+
     // Incremental set API
     virtual int set_start(set_handle_t *handle, const char *key, size_t final_data_size, uint32_t create_flags);
     virtual int set_add_data(set_handle_t handle, const void *value_data, size_t data_size);
     virtual int set_finalize(set_handle_t handle);
- 
+
     // Key iterator
     virtual int iterator_open(iterator_t *it, const char *prefix = NULL);
     virtual int iterator_next(iterator_t it, char *key, size_t key_size);
     virtual int iterator_close(iterator_t it);
-    
+
 private:
     int _build_full_path_key(const char *key_stc);
     int _verify_key_file(const char *key, key_metadata_t *key_metadata, File *kv_file);
@@ -150,9 +112,9 @@ private:
     size_t _max_keys;
     size_t _num_keys;
     bool _is_initialized;
-	char _cfg_fs_path[FSST_PATH_NAME_SIZE+1];
-	char _full_path_key[FSST_PATH_NAME_SIZE+KVStore::MAX_KEY_LENGTH+1];
-	size_t _cur_inc_data_size;
+    char _cfg_fs_path[FSST_PATH_NAME_SIZE + 1];
+    char _full_path_key[FSST_PATH_NAME_SIZE + KVStore::MAX_KEY_SIZE + 1];
+    size_t _cur_inc_data_size;
 };
 
 
