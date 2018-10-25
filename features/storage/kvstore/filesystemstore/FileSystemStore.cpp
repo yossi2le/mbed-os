@@ -232,9 +232,10 @@ int FileSystemStore::get_info(const char *key, info_t *info)
     info->flags = key_metadata.user_flags;
 
 exit_point:
-    if (status == KVSTORE_SUCCESS) {
-        kv_file.close();
-    }
+	if ( (status == KVSTORE_SUCCESS) ||
+	  	 (status == KVSTORE_DATA_CORRUPT) ) {
+		kv_file.close();
+	}
     _mutex.unlock();
 
     return status;
@@ -268,6 +269,9 @@ int FileSystemStore::remove(const char *key)
             goto exit_point;
         }
     }
+    else if (status == KVSTORE_NOT_FOUND)  {
+    	goto exit_point;
+   	}
     kv_file.close();
 
     status = _fs->remove(_full_path_key);
@@ -303,7 +307,10 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
             goto exit_point;
         }
     }
-    kv_file.close();
+
+    if (status != KVSTORE_NOT_FOUND)  {
+        kv_file.close();
+   	}
 
     if ( (status = kv_file.open(_fs, _full_path_key, O_WRONLY | O_CREAT | O_TRUNC)) != KVSTORE_SUCCESS ) {
         tr_info("set_start failed to open: %s, for writing, err: %d", _full_path_key, status);
@@ -543,7 +550,7 @@ int FileSystemStore::_verify_key_file(const char *key, key_metadata_t *key_metad
     _build_full_path_key(key);
 
     if (0 != kv_file->open(_fs, _full_path_key, O_RDONLY) ) {
-        tr_error("Couldn't read: %s", _full_path_key);
+        tr_info("Couldn't read: %s", _full_path_key);
         status = KVSTORE_NOT_FOUND;
         goto exit_point;
     }
