@@ -19,10 +19,10 @@ kvstore
 └───conf
     │   mbed_lib.json
     │
-    ├───external
+    ├───tdb_external
     │       mbed_lib.json
     │
-    ├───external_no_rbp
+    ├───tdb_external_no_rbp
     │       mbed_lib.json
     │
     ├───filesystem
@@ -31,11 +31,11 @@ kvstore
     ├───filesystem_no_rbp
     │       mbed_lib.json
     │
-    └───internal
+    └───tdb_internal
             mbed_lib.json
 ```
 
-The kvstore configuration file structure includes five configuration files. The topmost configuration file is used to set up the full configuration of the storage by defining a single parameter (storage_type) to one of the predefined configurations. The configuration files in the subfolders are used to implement the above top level configurations.
+The kvstore configuration file structure includes six configuration files. The topmost configuration file is used to set up the full configuration of the storage by defining a single parameter (storage_type) to one of the predefined configurations. The configuration files in the subfolders are used to implement the above top level configurations.
 
 The configuration files can be found under `conf/<configuration name>`.
 * conf/tdb_internal - storage type TDB_INTERNAL configuration is intended to be used when all data will be stored in internal memory only. No need for additional security features. A single TDBStore object will be allocated in internal flash.
@@ -115,7 +115,7 @@ Below is the TDB_INTERNAL configuration mbed_lib.json
 }
 ```
 
-For this configuration please define the section of the internal storage that will be used for data, by defining these parameters: internal_base_address and internal_size. If not defined, the storage will start in the first sector immediately after the end of the application. This can reduce the ability to update the application with a bigger one.
+For this configuration please define the section of the internal storage that will be used for data, by defining these parameters in your app.config file: internal_base_address and internal_size. If not defined, the storage will start in the first sector immediately after the end of the application. This can reduce the ability to update the application with a bigger one.
 
 ### TDB_External
 ![External](./TDB_External.jpg)
@@ -285,7 +285,7 @@ Below is the FILESYSTEM configuration mbed_lib.json
 If filesystem is not set the default filesystem and block device will be applied and blockdevice, external_size and external_base_address will be ignored 
 
 ### Configuration functions API.
-Base on the parameter above a different setup function will be called. Below is a list of setup function and their description.
+Base on the parameter above a different setup function will be called automatically. Below is a list of setup function and their description.
 
 ```
 #if MBED_CONF_STORAGE_STORAGE == NULL 
