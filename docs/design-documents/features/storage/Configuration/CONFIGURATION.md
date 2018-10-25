@@ -58,9 +58,9 @@ The following is a list of all storage parameters available and their descriptio
 * default_kv - This is a string representing the path for the default kvstore instantiation. Applications can pass an empty path (only the key name) or pass the generated name for this parameter (MBED_CONF_STORAGE_DEFAULT_KV) as the path to use this configuration.
 * internal_size - The size in bytes for the internal FlashIAP block device. This should enable together with the internal_base_address to adjust exactly the size and location where the block device resides on memory. If not defined the block device will try to get the maximum size available.
 * internal_base_address - The address where the internal FlashIAP blockDevice starts. This helps to prevent collisions with other needs like firmware updates. If not defined the start address will be set to the first sector after the application code ends in TDB_internal while in any external configurations with rollback protection support it will be set to end of flash - rbp_internal_size.
-* rbp_number_of_entries - set the number of entries allowed for rollback protection. The default is set to 64.
+* rbp_number_of_entries - set the number of entries allowed for rollback protection. The default is set to 64. This parameter controls the max number of different keys that can be created with rollback protection flag.
 rbp_internal_size sets the size for the rollback protection TDBStore in the internal memory. the base address will be calculated as flash ends address - size.
-* filesystem - Options are FAT, LITTLE or default. If not set the default file system will be used.
+* filesystem - Options are FAT, LITTLE or default. If not set or set to default the file system type will be selected according to the storage component selected for the board in targets.json file: FAT for "components": ["SD"] and Littlefs for "components": ["SPIF"].
 * blockdevice - Options are default, SPIF, DATAFLASH, QSPIF or SD. If filesystem set to default this parameter is ignored.
 * external_size - The size of the external block device in bytes. If not set the maximum available size will be used. 
 * external_base_address - The start address of the external block device. if not set 0 address will be used.
@@ -285,7 +285,8 @@ Below is the FILESYSTEM configuration mbed_lib.json
 If filesystem is not set the default filesystem and block device will be applied and blockdevice, external_size and external_base_address will be ignored 
 
 ### Configuration functions API.
-Base on the parameter above a different setup function will be called automatically. Below is a list of setup function and their description.
+Applications must call the function **storage_configuration()** to instantiate the required configuration. This function is defined as weak to allow the replacement of this function with a completely different implementation of the instantiation of components.
+Below is a list of setup functions that will be called by storage_configuration() in each case, and their description.
 
 ```
 #if MBED_CONF_STORAGE_STORAGE == NULL 
