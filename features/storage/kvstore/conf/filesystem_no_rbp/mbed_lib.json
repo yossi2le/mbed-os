@@ -1,29 +1,29 @@
 {
-    "name": "filesystem_store_no_rbp",
+    "name": "storage_filesystem_no_rbp",
     "config": {
         "filesystem": {
             "help": "Options are default, FAT or LITTLE. If not specified default filesystem will be used",
-            "value": "NULL"
+            "value": "default"
         },
         "blockdevice": {
             "help": "Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If not set the default block device will be used",
-            "value": "NULL"
+            "value": "default"
         },
         "external_size": {
             "help": "Size in bytes of the external block device, if not specified the maximum is the default.",
-            "value": "NULL"
+            "value": "0"
         },
         "external_base_address": {
             "help": "If not defined the default is from address 0",
-            "value": "NULL"
+            "value": "0"
         },    
         "mount_point": {
             "help": "Where to mount the filesystem. Ignored if the default file system is applied.",
-            "value": "/sd"
+            "value": "kv"
         },
         "folder_path": {
             "help": "Path for the working directory where the FileSyetemStore stores the data",
-            "value": "/kvstore"
+            "value": "kvstore"
         }
     }
 }

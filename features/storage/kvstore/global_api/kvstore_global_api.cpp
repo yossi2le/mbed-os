@@ -15,6 +15,7 @@
  */
 #include "kvstore_global_api.h"
 
+#include "kv_config.h"
 #include "kv_map.h"
 #include "KVStore.h"
 
@@ -28,7 +29,7 @@ struct _opaque_kv_key_iterator{
 
 int kv_set(const char *full_name_key, const void *buffer, size_t size, uint32_t create_flags)
 {
-    int ret = kv_init();
+    int ret = storage_configuration();
     if (KVSTORE_SUCCESS != ret) {
         return ret;
     }
@@ -41,7 +42,7 @@ int kv_set(const char *full_name_key, const void *buffer, size_t size, uint32_t 
 
 int kv_get(const char *full_name_key, void *buffer, size_t buffer_size, size_t *actual_size)
 {
-    int ret = kv_init();
+    int ret = storage_configuration();
     if (KVSTORE_SUCCESS != ret) {
         return ret;
     }
@@ -54,7 +55,7 @@ int kv_get(const char *full_name_key, void *buffer, size_t buffer_size, size_t *
 
 int kv_get_info(const char *full_name_key, kv_info_t *info)
 {
-    int ret = kv_init();
+    int ret = storage_configuration();
     if (KVSTORE_SUCCESS != ret) {
         return ret;
     }
@@ -74,7 +75,7 @@ int kv_get_info(const char *full_name_key, kv_info_t *info)
 
 int kv_remove(const char *full_name_key)
 {
-    int ret = kv_init();
+    int ret = storage_configuration();
     if (KVSTORE_SUCCESS != ret) {
         return ret;
     }
@@ -87,7 +88,7 @@ int kv_remove(const char *full_name_key)
 
 int kv_iterator_open(kv_iterator_t *it, const char *full_prefix)
 {
-    int ret = kv_init();
+    int ret = storage_configuration();
     if (KVSTORE_SUCCESS != ret) {
         return ret;
     }
@@ -116,7 +117,7 @@ int kv_iterator_open(kv_iterator_t *it, const char *full_prefix)
 
 int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size)
 {
-    int ret = kv_init();
+    int ret = storage_configuration();
     if (KVSTORE_SUCCESS != ret) {
         return ret;
     }
@@ -126,7 +127,7 @@ int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size)
 
 int kv_iterator_close(kv_iterator_t it)
 {
-    int ret = kv_init();
+    int ret = storage_configuration();
     if (KVSTORE_SUCCESS != ret) {
         return ret;
     }

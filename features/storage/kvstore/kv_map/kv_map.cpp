@@ -51,11 +51,6 @@ int kv_init()
     kv_num_attached_kvs = 0;
     memset(&kv_map_table, 0, sizeof(kv_map_table));
 
-    ret = storage_configuration();
-    if (ret != KVSTORE_SUCCESS) {
-        goto exit;
-    }
-
     is_initialize = 1;
 
 exit:

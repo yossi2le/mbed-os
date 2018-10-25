@@ -1,5 +1,5 @@
 {
-    "name": "tdb_external_no_rbp",
+    "name": "storage_tdb_external_no_rbp",
     "config": {
         "external_size": {
             "help": "Size of the external block device",

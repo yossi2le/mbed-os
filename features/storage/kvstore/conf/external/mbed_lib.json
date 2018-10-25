@@ -1,6 +1,6 @@
 {
 
-    "name": "tdb_external",
+    "name": "storage_tdb_external",
     "config": {
         "rbp_internal_size": {
             "help": "If not defined default size is 4K*#enteries/32",

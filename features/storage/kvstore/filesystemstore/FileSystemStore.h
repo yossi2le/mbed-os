@@ -57,7 +57,7 @@ typedef struct {
  *  ...
  *  @endcode
  */
-class FileSystemStore : KVStore {
+class FileSystemStore : public KVStore {
 
 public:
     /** Create FileSystemStore - A Key Value API on top of FS

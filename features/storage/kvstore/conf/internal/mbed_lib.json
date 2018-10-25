@@ -1,5 +1,5 @@
 {
-    "name": "tdb_internal",
+    "name": "storage_tdb_internal",
     "config": {
         "internal_size": {
             "help": "Size of the FlashIAP block device",
