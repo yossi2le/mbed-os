@@ -4,7 +4,7 @@
     "config": {
         "rbp_internal_size": {
             "help": "If not defined default size is 4K*#enteries/32",
-            "value": "NULL"
+            "value": "0"
         },
         "rbp_number_of_entries": {
             "help": "If not defined default is 64",
@@ -12,19 +12,19 @@
         },
         "internal_base_address": {
             "help": "If not defined the default is the first sector after the application code ends.",
-            "value": "NULL"
+            "value": "0"
         },
         "blockdevice": {
             "help": "Options are default, SPIF, DATAFASH, QSPIF or SD",
-            "value": "NULL"
+            "value": "default"
         },
         "external_size": {
             "help": "Size of the external block device",
-            "value": "NULL"
+            "value": "0"
         },
         "external_base_address": {
             "help": "If not defined the default is from address 0",
-            "value": "NULL"
+            "value": "0"
         }
     }
 }

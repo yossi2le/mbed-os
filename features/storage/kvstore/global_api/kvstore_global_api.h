@@ -20,6 +20,7 @@
 #include "stdint.h"
 
 typedef struct _opaque_kv_key_iterator *kv_iterator_t;
+typedef struct _opaque_kv_set_handle *kv_set_handle_t;
 
 enum kv_create_flags {
     KV_WRITE_ONCE_FLAG       = (1 << 0),
@@ -79,6 +80,38 @@ int kv_get_info(const char *full_name_key, kv_info_t *info);
 int kv_remove(const char *full_name_key);
 
 /**
+ * @brief Start an incremental KVStore set sequence.
+ *
+ * @param[out] handle               Returned incremental set handle.
+ * @param[in]  key                  Key.
+ * @param[in]  final_data_size      Final value data size.
+ * @param[in]  create_flags         Flag mask.
+ *
+ * @returns 0 on success or a negative error code on failure
+ */
+int kv_set_start(kv_set_handle_t *handle, const char *key, size_t final_data_size, uint32_t create_flags);
+
+/**
+ * @brief Add data to incremental KVStore set sequence.
+ *
+ * @param[in]  handle               Incremental set handle.
+ * @param[in]  value_data           value data to add.
+ * @param[in]  data_size            value data size.
+ *
+ * @returns 0 on success or a negative error code on failure
+ */
+int kv_set_add_data(kv_set_handle_t handle, const void *value_data, size_t data_size);
+
+/**
+ * @brief Finalize an incremental KVStore set sequence.
+ *
+ * @param[in]  handle               Incremental set handle.
+ *
+ * @returns 0 on success or a negative error code on failure
+ */
+int kv_set_finalize(kv_set_handle_t handle);
+
+/**
  * @brief Start an iteration over KVStore keys.
  *
  * @param[out] it                   Allocating iterator handle.
@@ -109,5 +142,9 @@ int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size);
  * @returns 0 on success or a negative error code on failure
  */
 int kv_iterator_close(kv_iterator_t it);
+
+//Helper function
+//Currently for test only. please dont use it cause it might be removed before release
+int kv_reset(const char * kvstore_path);
 
 #endif

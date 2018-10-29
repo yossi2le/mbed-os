@@ -94,18 +94,18 @@ int kv_detach(const char *partition_name)
     }
 
     ret = KVSTORE_NOT_FOUND;
-    for (int i=0; i < MAX_ATTACHED_KVS; i++ ) {
+    for (int i = 0; i < MAX_ATTACHED_KVS; i++ ) {
 
-        if (strcmp(partition_name,kv_map_table[i].partition_name) != 0){
+        if (strcmp(partition_name, kv_map_table[i].partition_name) != 0) {
             continue;
         }
 
         free(kv_map_table[i].partition_name);
         kv_map_table[i].kvstore_instance->deinit();
 
-        memcpy(&kv_map_table[i],&kv_map_table[i+1], sizeof(kv_map_entry_t)*(MAX_ATTACHED_KVS-i-1));
-        kv_map_table[MAX_ATTACHED_KVS-1].partition_name = NULL;
-        kv_map_table[MAX_ATTACHED_KVS-1].kvstore_instance = NULL;
+        memcpy(&kv_map_table[i], &kv_map_table[i + 1], sizeof(kv_map_entry_t) * (MAX_ATTACHED_KVS - i - 1));
+        kv_map_table[MAX_ATTACHED_KVS - 1].partition_name = NULL;
+        kv_map_table[MAX_ATTACHED_KVS - 1].kvstore_instance = NULL;
 
         ret = KVSTORE_SUCCESS;
         break;
@@ -127,7 +127,7 @@ int kv_deinit()
         goto exit;
     }
 
-    for (int i=0; i < MAX_ATTACHED_KVS; i++ ) {
+    for (int i = 0; i < MAX_ATTACHED_KVS; i++ ) {
 
         if (kv_map_table[i].kvstore_instance == NULL) {
             goto exit;
@@ -149,8 +149,8 @@ int kv_lookup(const char *full_name, KVStore **kv_instance, char *key)
 {
 
     int ret = KVSTORE_SUCCESS;
-    char *first_token = NULL;
-    char * delimiter_location = NULL;
+    char *token = NULL;
+    char *str = strdup(full_name);
 
     mutex->lock();
 
@@ -159,20 +159,19 @@ int kv_lookup(const char *full_name, KVStore **kv_instance, char *key)
         goto exit;
     }
 
-    first_token = strtok((char *)full_name, "/" );
-    if (first_token == NULL) {
+
+    token = strtok(str, "/" );
+    if (strcmp(token,full_name) == 0) {
         //use default partition if path is empty
         *kv_instance = kv_map_table[0].kvstore_instance;
+        strcpy(key, full_name);
         goto exit;
     }
 
-    //setting null terminator on the delimiter /
-    delimiter_location = first_token-1;
-    *delimiter_location = '\0';
     int i;
-    for (i=0; i < MAX_ATTACHED_KVS; i++ ) {
+    for (i = 0; i < MAX_ATTACHED_KVS; i++ ) {
 
-        if (strcmp(full_name,kv_map_table[i].partition_name) != 0){
+        if (strcmp(str, kv_map_table[i].partition_name) != 0) {
             continue;
         }
 
@@ -180,20 +179,21 @@ int kv_lookup(const char *full_name, KVStore **kv_instance, char *key)
         break;
     }
 
-    //put back original delimiter in place.
-    *delimiter_location = '/';
 
     if (i == MAX_ATTACHED_KVS) {
         ret = KVSTORE_NOT_FOUND;
         goto exit;
     }
-
 exit:
     if (ret == KVSTORE_SUCCESS) {
         //if success extarct the key
-        strcpy(key, first_token);
+        token = strtok(NULL, "/" );
+        if (token != NULL) {
+            strcpy(key, token);
+        }
     }
 
+    free(str);
     mutex->unlock();
     return ret;
 }

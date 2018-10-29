@@ -1,9 +1,9 @@
 {
-    "name": "storage_filesystem_store",
+    "name": "storage_filesystem",
     "config": {
         "rbp_internal_size": {
             "help": "If not defined default size is 4K*#enteries/32",
-            "value": "NULL"
+            "value": "0"
         },
         "rbp_number_of_entries": {
             "help": "If not defined default is 64",
@@ -11,7 +11,7 @@
         },
         "internal_base_address": {
             "help": "If not defined the default is the first sector after the application code ends.",
-            "value": "NULL"
+            "value": "0"
         },
         "filesystem": {
             "help": "Options are default, FAT or LITTLE. If not specified default filesystem will be used",
@@ -27,7 +27,7 @@
         },
         "external_base_address": {
             "help": "If not defined the default is from address 0",
-            "value": "00"
+            "value": "0"
         },    
         "mount_point": {
             "help": "Where to mount the filesystem. Ignored if the default file system is applied.",
