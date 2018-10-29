@@ -19,7 +19,6 @@
 #include "KVStore.h"
 #include "FileSystem.h"
 
-#define FSST_MAX_PATH_NAME_SIZE 16
 #ifndef FSST_FOLDER_PATH
 #define FSST_FOLDER_PATH "$fsst$" //default FileSystemStore folder path on fs
 #endif
@@ -208,9 +207,9 @@ private:
     PlatformMutex _mutex;
 
     bool _is_initialized;
-    char *_cfg_fs_path; /* FileSystemStore path on FileSystem */
-    char _full_path_key[FSST_MAX_PATH_NAME_SIZE + KVStore::MAX_KEY_SIZE +
-                                                1]; /* Full name of Key file currently working on */
+    char *_cfg_fs_path; /* FileSystemStore path name on FileSystem */
+    size_t _cfg_fs_path_size; /* Size of configured FileSystemStore path name on FileSystem */
+    char *_full_path_key; /* Full name of Key file currently working on */
     size_t _cur_inc_data_size; /* Amount of data added to Key file so far, during incremental add data */
 };
 
