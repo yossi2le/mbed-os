@@ -52,10 +52,12 @@ int FileSystemStore::init()
 
     _mutex.lock();
 
-    _cfg_fs_path = strndup(FSST_FOLDER_PATH, FSST_MAX_PATH_NAME_SIZE);
-    memset(_full_path_key, 0, FSST_MAX_PATH_NAME_SIZE + KVStore::MAX_KEY_SIZE + 1);
-    strncpy(_full_path_key, _cfg_fs_path, FSST_MAX_PATH_NAME_SIZE);
-    strcat(_full_path_key, "/");
+    _cfg_fs_path_size = strlen(FSST_FOLDER_PATH);
+    _cfg_fs_path = strndup(FSST_FOLDER_PATH, _cfg_fs_path_size);
+    _full_path_key = new char[_cfg_fs_path_size + KVStore::MAX_KEY_SIZE + 1];
+    memset(_full_path_key, 0, (_cfg_fs_path_size + KVStore::MAX_KEY_SIZE + 1));
+    strncpy(_full_path_key, _cfg_fs_path, _cfg_fs_path_size);
+    _full_path_key[_cfg_fs_path_size] = '/';
     _cur_inc_data_size = 0;
 
     Dir kv_dir;
@@ -88,6 +90,7 @@ int FileSystemStore::deinit()
     _mutex.lock();
     _is_initialized = false;
     free(_cfg_fs_path);
+    delete _full_path_key;
     _mutex.unlock();
     return KVSTORE_SUCCESS;
 
@@ -549,7 +552,6 @@ exit_point:
 int FileSystemStore::_verify_key_file(const char *key, key_metadata_t *key_metadata, File *kv_file)
 {
     int status = KVSTORE_SUCCESS;
-    uint32_t file_size = 0;
 
     if (key == NULL) {
         status = KVSTORE_BAD_VALUE;
@@ -563,8 +565,6 @@ int FileSystemStore::_verify_key_file(const char *key, key_metadata_t *key_metad
         status = KVSTORE_NOT_FOUND;
         goto exit_point;
     }
-
-    file_size = (uint32_t)kv_file->size();
 
     //Read Metadata
     kv_file->read(key_metadata, sizeof(key_metadata_t));
@@ -581,8 +581,8 @@ exit_point:
 
 int FileSystemStore::_build_full_path_key(const char *key_src)
 {
-    strncpy(&_full_path_key[strlen(_cfg_fs_path) + 1/* for path's \ */], key_src, KVStore::MAX_KEY_SIZE);
-    _full_path_key[(FSST_MAX_PATH_NAME_SIZE + KVStore::MAX_KEY_SIZE)] = '\0';
+    strncpy(&_full_path_key[_cfg_fs_path_size + 1/* for path's \ */], key_src, KVStore::MAX_KEY_SIZE);
+    _full_path_key[(_cfg_fs_path_size + KVStore::MAX_KEY_SIZE)] = '\0';
     return 0;
 }
 

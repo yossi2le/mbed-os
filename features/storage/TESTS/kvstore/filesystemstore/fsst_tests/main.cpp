@@ -25,14 +25,18 @@
 #include "rtos/Thread.h"
 #include <stdlib.h>
 
+#define FSST_TEST_NUM_OF_THREADS 5
+
 using namespace utest::v1;
 using namespace mbed;
 
-SPIFBlockDevice bd(PTE2, PTE4, PTE1, PTE5);
+//SPIFBlockDevice bd(PTE2, PTE4, PTE1, PTE5);
+SPIFBlockDevice bd(MBED_CONF_SPIF_DRIVER_SPI_MOSI, MBED_CONF_SPIF_DRIVER_SPI_MISO, MBED_CONF_SPIF_DRIVER_SPI_CLK,
+                   MBED_CONF_SPIF_DRIVER_SPI_CS);
 
 typedef struct {
-	int thread_num;
-	FileSystemStore *fsst;
+    int thread_num;
+    FileSystemStore *fsst;
 } thread_data_t;
 
 
@@ -44,23 +48,22 @@ static void test_set_thread_job(void *data)
     char thread_str[3] = {0};
     int err = 0;
 
-
     thread_data_t *thread_data = (thread_data_t *)data;
     int thread_num = thread_data->thread_num;
     FileSystemStore *thread_fsst = (FileSystemStore *)(thread_data->fsst);
 
     utest_printf("\n Thread %d Started\n", thread_num);
 
-    strcat(kv_value,itoa(thread_num, thread_str, 10));
-    strcat(kv_key,itoa(thread_num, thread_str, 10));
-    err = thread_fsst->set(kv_key, kv_value, strlen(kv_value), 0x2);
+    strcat(kv_value, itoa(thread_num, thread_str, 10));
+    strcat(kv_key, itoa(thread_num, thread_str, 10));
+    err = thread_fsst->set(kv_key, kv_value, strlen(kv_value) + 1, 0x2);
 
     TEST_ASSERT_EQUAL(0, err);
 }
 
 void test_file_system_store_functionality_unit_test()
 {
-     utest_printf("Test FileSystemStore Functionality APIs..\n");
+    utest_printf("Test FileSystemStore Functionality APIs..\n");
 
     char kv_value1[64] = {"value1value1value1value1value1value1"};
     char kv_key1[16] = {"key1"};
@@ -72,162 +75,128 @@ void test_file_system_store_functionality_unit_test()
     char kv_key5[16] = {"key5"};
     char kv_buf[64] = {0};
     char kv_name[16] = {0};
+    int i_ind = 0;
+    int err = 0;
+    size_t actual_size = 0;
 
-
-    int err = bd.init();
+    err = bd.init();
     TEST_ASSERT_EQUAL(0, err);
     LittleFileSystem fs("lfs", &bd);
     //FATFileSystem fs("fatfs", &bd);
 
     err = fs.mount(&bd);
     if (err) {
-    	err = fs.reformat(&bd);
-    	TEST_ASSERT_EQUAL(0, err);
+        err = fs.reformat(&bd);
+        TEST_ASSERT_EQUAL(0, err);
     }
 
-    FileSystemStore *fsst = new FileSystemStore(/*10, */&fs);
+    FileSystemStore *fsst = new FileSystemStore(&fs);
 
     err = fsst->init();
-    utest_printf("init fsst: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
     err = fsst->reset();
-    utest_printf("Reset! FSST, err: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
-    int i_ind = 0;
-
-    size_t actual_size = 0;
-
-    err = fsst->set(kv_key1, kv_value1, 64, 0x2/* flags */);
-    utest_printf("Set1: %d\n", err);
+    /* Set key1 */
+    err = fsst->set(kv_key1, kv_value1, 64, 0x2);
     TEST_ASSERT_EQUAL(0, err);
 
+    /* Set key2 */
     err = fsst->set(kv_key2, kv_value2, strlen(kv_value2), 0x4);
-    utest_printf("Set2: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
-    err = fsst->get(kv_key2, kv_buf, 64, &actual_size, 0/*offset*/);
-    utest_printf("Get2 - err: %d, act_size: %d\n", err, (int)actual_size);
-    utest_printf("Get2 - data: %s\n", kv_buf);
+    err = fsst->get(kv_key2, kv_buf, 64, &actual_size, 0);
+    TEST_ASSERT_EQUAL(0, strcmp(kv_buf, kv_value2));
+    TEST_ASSERT_EQUAL(strlen(kv_value2), (int)actual_size);
     TEST_ASSERT_EQUAL(0, err);
 
     KVStore::info_t kv_info;
     err = fsst->get_info(kv_key1, &kv_info);
-    utest_printf("Get Info 1 - err: %d, flags: %d, size: %d\n", err, (int)kv_info.flags, (int)kv_info.size);
+    TEST_ASSERT_EQUAL(((int)kv_info.flags), 0x2);
     TEST_ASSERT_EQUAL(0, err);
 
-    err = fsst->set(kv_key3, kv_value3, 12, 0x8/* flags */);
-    utest_printf("Set3: %d\n", err);
+    /* Set kei3 */
+    err = fsst->set(kv_key3, kv_value3, 12, 0x8);
     TEST_ASSERT_EQUAL(0, err);
 
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(kv_key3, kv_buf, 64, &actual_size, 0/*offset*/);
-    utest_printf("Get3 - err: %d, act_size: %d\n", err, (int)actual_size);
-    utest_printf("Get3 - data: %s\n", kv_buf);
+    /* Set key5 WRITE_ONCE Twice */
+    err = fsst->set(kv_key5, kv_value5, 10, 0x1);
     TEST_ASSERT_EQUAL(0, err);
 
-    err = fsst->set(kv_key5, kv_value5, 10, 0x1/* flags */);
-    utest_printf("Set5: %d\n", err);
-    TEST_ASSERT_EQUAL(0, err);
-
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(kv_key5, kv_buf, 64, &actual_size, 0/*offset*/);
-    utest_printf("Get5 once - err: %d, act_size: %d\n", err, (int)actual_size);
-    utest_printf("Get5 once - data: %s\n", kv_buf);
-    TEST_ASSERT_EQUAL(0, err);
-
-    err = fsst->set(kv_key5, kv_value3, 10, 0x8/* flags */);
-    utest_printf("Set5 even though its write once: %d\n", err);
+    err = fsst->set(kv_key5, kv_value3, 10, 0x8);
     TEST_ASSERT_EQUAL(KVSTORE_WRITE_ONCE_ERROR, err);
 
-	memset(kv_buf, 0 ,64);
-	err = fsst->get(kv_key5, kv_buf, 64, &actual_size, 0/*offset*/);
-	utest_printf("Get5 once again - err: %d, act_size: %d\n", err, (int)actual_size);
-	utest_printf("Get5 once again - data: %s\n", kv_buf);
-	TEST_ASSERT_EQUAL(0, err);
+    /* Verify value remains of first set */
+    memset(kv_buf, 0, 64);
+    err = fsst->get(kv_key5, kv_buf, 64, &actual_size, 0);
+    TEST_ASSERT_EQUAL(0, strncmp(kv_buf, kv_value5, 10));
+    TEST_ASSERT_EQUAL(0, err);
 
-    err = fsst->get("key4", kv_buf, 64, &actual_size, 0/*offset*/);
-    utest_printf("Get Non Existing Key4 - err: %d, act_size: %d\n", err, (int)actual_size);
+    /* Non existing File get fails */
+    err = fsst->get("key4", kv_buf, 64, &actual_size, 0);
     TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
 
-    utest_printf("Iterate All Files: \n");
     KVStore::iterator_t kv_it;
     err = fsst->iterator_open(&kv_it, NULL);
     TEST_ASSERT_EQUAL(0, err);
-    utest_printf("Iterator Open - err: %d\n", err);
     i_ind = 0;
-    while (fsst->iterator_next(kv_it, kv_name, 16) != KVSTORE_NOT_FOUND)
-    {
-    	i_ind++;
-    	utest_printf("File: %d, key: %s\n", i_ind, kv_name);
+    while (fsst->iterator_next(kv_it, kv_name, 16) != KVSTORE_NOT_FOUND) {
+        i_ind++;
     }
+    TEST_ASSERT_EQUAL(i_ind, 4); /* 4 Files : key1, key2, kei3, key5 */
     fsst->iterator_close(kv_it);
     TEST_ASSERT_EQUAL(0, err);
 
+    /* Remove Write Once key5 - should fail */
     err = fsst->remove(kv_key5);
-    utest_printf("Remove5 (once) - err: %d\n", err);
     TEST_ASSERT_EQUAL(KVSTORE_WRITE_ONCE_ERROR, err);
 
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(kv_key5, kv_buf, 64, &actual_size, 0/*offset*/);
-    utest_printf("Get5 (once) again - err: %d, act_size: %d\n", err, (int)actual_size);
-    utest_printf("Get5 (once) again - data: %s\n", kv_buf);
+    /* Verify key5 still remains and has the same value */
+    memset(kv_buf, 0, 64);
+    err = fsst->get(kv_key5, kv_buf, 64, &actual_size, 0);
+    TEST_ASSERT_EQUAL(0, strncmp(kv_buf, kv_value5, 10));
     TEST_ASSERT_EQUAL(0, err);
 
-    utest_printf("Iterate Files with prefix = key \n");
     fsst->iterator_open(&kv_it, "key");
     TEST_ASSERT_EQUAL(0, err);
     i_ind = 0;
-    while (fsst->iterator_next(kv_it, kv_name, 16) != KVSTORE_NOT_FOUND)
-    {
-    	i_ind++;
-    	utest_printf("File: %d, key: %s\n", i_ind, kv_name);
+    while (fsst->iterator_next(kv_it, kv_name, 16) != KVSTORE_NOT_FOUND) {
+        i_ind++;
+        TEST_ASSERT_EQUAL(0, strncmp(kv_name, "key", strlen("key")));
     }
+    TEST_ASSERT_EQUAL(i_ind, 3); /* 3 Files with prefix 'key' : key1, key2, key5 */
     fsst->iterator_close(kv_it);
     TEST_ASSERT_EQUAL(0, err);
 
-    utest_printf("Removing Name Kei3\n");
+    /* Verify double Remove kei3: first succeed, second fails */
     err = fsst->remove(kv_key3);
     TEST_ASSERT_EQUAL(0, err);
-    utest_printf("Remove - err: %d\n", err);
-    utest_printf("(-) Remove Kei3 Again!\n");
     err = fsst->remove(kv_key3);
     TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
-    utest_printf("Remove - err: %d\n", err);
 
+    /* Verify after removing kei3 that get value/info fail */
     err = fsst->get(kv_key3, kv_buf, 64, &actual_size, 0);
-    utest_printf("After Remove Get3 - err: %d\n", err);
     TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
     err = fsst->get_info(kv_key3, &kv_info);
-    utest_printf("After Remove Get3 Info - err: %d\n", err);
     TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
 
-    err = fsst->get(kv_key2, kv_buf, 64, &actual_size, 0/*offset*/);
-    utest_printf("Before Reset Get2 - err: %d\n", err);
+    /* Reset - Verify key2 exists before reset, and not found after reset  */
+    err = fsst->get(kv_key2, kv_buf, 64, &actual_size, 0);
     TEST_ASSERT_EQUAL(0, err);
-     err = fsst->reset();
-    utest_printf("Reset Status - err: %d\n", err);
-
-    err = fsst->get(kv_key2, kv_buf, 64, &actual_size, 0/*offset*/);
-    utest_printf("After Reset Get2 - err: %d\n", err);
+    err = fsst->reset();
+    err = fsst->get(kv_key2, kv_buf, 64, &actual_size, 0);
     TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
-    err = fsst->get(kv_key5, kv_buf, 64, &actual_size, 0/*offset*/);
-     utest_printf("After Reset Get5 (once) - err: %d\n", err);
-     TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
 
-     err = fsst->set(kv_key5, kv_value5, 10, 0x1/* flags */);
-     utest_printf("Set5: %d\n", err);
-     TEST_ASSERT_EQUAL(0, err);
+    /* Verify that even Write-Once key5 is not found after reset */
+    err = fsst->get(kv_key5, kv_buf, 64, &actual_size, 0);
+    TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
 
-     memset(kv_buf, 0 ,64);
-     err = fsst->get(kv_key5, kv_buf, 64, &actual_size, 0/*offset*/);
-     utest_printf("Get5 once - err: %d, act_size: %d\n", err, (int)actual_size);
-     utest_printf("Get5 once - data: %s\n", kv_buf);
-     TEST_ASSERT_EQUAL(0, err);
+    /* Verify that key5 Write-Once can be set again after Reset*/
+    err = fsst->set(kv_key5, kv_value5, 10, 0x1);
+    TEST_ASSERT_EQUAL(0, err);
 
     err = fsst->deinit();
-    utest_printf("deinit fsst: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
     err = bd.deinit();
     TEST_ASSERT_EQUAL(0, err);
@@ -254,236 +223,177 @@ void test_file_system_store_edge_cases()
 
     err = fs.mount(&bd);
     if (err) {
-    	err = fs.reformat(&bd);
-    	TEST_ASSERT_EQUAL(0, err);
+        err = fs.reformat(&bd);
+        TEST_ASSERT_EQUAL(0, err);
     }
 
-    FileSystemStore *fsst = new FileSystemStore(/*10, */&fs);
+    FileSystemStore *fsst = new FileSystemStore(&fs);
 
     err = fsst->init();
-    utest_printf("init fsst: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
     err = fsst->reset();
-    utest_printf("Reset! FSST, err: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
     size_t actual_size = 0;
 
-   /*********************************/
+    /*********************************/
     /*********** Unit Test ***********/
     /*********************************/
-    utest_printf("(-) Key is NULL\n");
-    err = fsst->set(NULL, kv_value1, 64, 0x2/* flags */);
-    utest_printf("Set1: %d\n", err);
+    /* Fail Set - key NULL */
+    err = fsst->set(NULL, kv_value1, 64, 0x2);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-) Key length exceeds max\n");
-    err = fsst->set(NULL, kv_value1, KVStore::MAX_KEY_SIZE+10, 0x2/* flags */);
-    utest_printf("Set1: %d\n", err);
+    /* Fail Set - Key length exceeds max */
+    err = fsst->set(NULL, kv_value1, KVStore::MAX_KEY_SIZE + 10, 0x2);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-) Buffer is NULL Size > 0\n");
-    err = fsst->set(kv_key1, NULL, 64, 0x2/* flags */);
-    utest_printf("Set1: %d\n", err);
+    /* Fail Set - NULL Buffer and size larger than 0 */
+    err = fsst->set(kv_key1, NULL, 64, 0x2);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(+) Buffer is valid Size = 0\n");
-    err = fsst->set(kv_key1, kv_value1, 0, 0x2/* flags */);
-    utest_printf("Set1: %d\n", err);
+    /* OK Set - NULL Buffer and Size is 0 */
+    err = fsst->set(kv_key1, kv_value1, 0, 0x2);
     TEST_ASSERT_EQUAL(0, err);
 
-    utest_printf("(+) Set Key 1 twice, get second value\n");
-    err = fsst->set(kv_key1, kv_value1, 64, 0x2/* flags */);
-    utest_printf("Set1: %d\n", err);
-    err = fsst->set(kv_key1, kv_value2, strlen(kv_value2), 0x2/* flags */);
-    utest_printf("Set1: %d\n", err);
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(kv_key1, kv_buf, 64, &actual_size, 0/*offset*/);
-    utest_printf("Get1 - err: %d, act_size: %d\n", err, (int)actual_size);
-    utest_printf("Get1 - data: %s\n", kv_buf);
-    err = fsst->get_info(kv_key1, &kv_info);
-    utest_printf("Get Info 1 - err: %d, flags: %d, size: %d\n", err, (int)kv_info.flags, (int)kv_info.size);
+    /* OK Set - Set Key1 twice and get returns second value */
+    err = fsst->set(kv_key1, kv_value1, 64, 0x2);
+    err = fsst->set(kv_key1, kv_value2, strlen(kv_value2), 0x2);
+    memset(kv_buf, 0, 64);
+    err = fsst->get(kv_key1, kv_buf, 64, &actual_size, 0);
+    TEST_ASSERT_EQUAL(0, strcmp(kv_buf, kv_value2));
     TEST_ASSERT_EQUAL(0, err);
 
-    utest_printf("(-) Get Key Null\n");
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(NULL, kv_buf, 64, &actual_size, 0/*offset*/);
-    utest_printf("Get1 - err: %d\n", err);
+    /* Fail Get - NULL Key */
+    memset(kv_buf, 0, 64);
+    err = fsst->get(NULL, kv_buf, 64, &actual_size, 0);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(+) Get Key buffer null, size 0\n");
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(kv_key1, NULL, 0, &actual_size, 0/*offset*/);
-    utest_printf("Get1 - err: %d\n", err);
+    /* OK Get - NULL buffer , size=0 */
+    memset(kv_buf, 0, 64);
+    err = fsst->get(kv_key1, NULL, 0, &actual_size, 0);
     TEST_ASSERT_EQUAL(0, err);
 
-    utest_printf("(-) Get Key buffer null, size > 0\n");
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(kv_key1, NULL, 64, &actual_size, 0/*offset*/);
-    utest_printf("Get1 - err: %d\n", err);
+    /* Fail Get - NULL buffer , size>0 */
+    memset(kv_buf, 0, 64);
+    err = fsst->get(kv_key1, NULL, 64, &actual_size, 0);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(+) Get Key buffer smaller than actual size\n");
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(kv_key1, kv_buf, 8, &actual_size, 0/*offset*/);
-    utest_printf("Get1 - err: %d\n", err);
+    /* OK Get - buffer is smaller than value's actual size */
+    memset(kv_buf, 0, 64);
+    err = fsst->get(kv_key1, kv_buf, 8, &actual_size, 0);
     TEST_ASSERT_EQUAL(0, err);
 
-    utest_printf("(-) Get Key Offset larger than actual size\n");
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(kv_key1, kv_buf, 8, &actual_size, 128/*offset*/);
-    utest_printf("Get1 - err: %d\n", err);
+    /* Fail Get - offset larger than file size */
+    memset(kv_buf, 0, 64);
+    err = fsst->get(kv_key1, kv_buf, 8, &actual_size, 128);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-) Remove NULL key\n");
+    /* Fail Remove - NULL Key */
     err = fsst->remove(NULL);
-    utest_printf("Remove - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-) Remove NON Existing key\n");
+    /* Fail Remove - Key not found */
     err = fsst->remove("key4");
-    utest_printf("Remove - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-) Get Info Key Null\n");
+    /* Fail Get_Info - NULL Key */
     err = fsst->get_info(NULL, &kv_info);
-    utest_printf("Get1 - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-) Get Info - Info Null\n");
+    /* Fail Get_Info - NULL info pointer */
     err = fsst->get_info(kv_key1, NULL);
-    utest_printf("Get1 - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-) Get Info - Non existing key\n");
+    /* Fail Get_Info - Key not found */
     err = fsst->get_info("key4", &kv_info);
-    utest_printf("Get1 - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-)It Open - NULL it \n");
+    /* Fail Iteraor Open - NULL it */
     err = fsst->iterator_open(NULL, NULL);
-    utest_printf("It Open - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-)It Next - key size 0 \n");
+    /* Fail Iteraor Next - key size is 0  */
     err = fsst->iterator_open(&kv_it, NULL);
     err = fsst->iterator_next(kv_it, kv_name, 0);
-    utest_printf("It Next - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
     err = fsst->iterator_close(kv_it);
 
-    utest_printf("(+) It Next on empty folder\n");
+    /* OK Iteraor Next - empty folder, returns not found  */
     err = fsst->reset();
-    utest_printf("Reset Status - err: %d\n", err);
     err = fsst->iterator_open(&kv_it, NULL);
     err = fsst->iterator_next(kv_it, kv_name, 16);
     TEST_ASSERT_NOT_EQUAL(0, err);
-    utest_printf("It Next - err: %d\n", err);
     err = fsst->iterator_close(kv_it);
 
-    utest_printf("(+) It Next on 1 file folder\n");
-    err = fsst->set(kv_key1, kv_value1, 64, 0x2/* flags */);
-    utest_printf("Set1: %d\n", err);
+    /* OK Iteraor Next - 1 File in folder, first returns ok, second returns not found  */
+    err = fsst->set(kv_key1, kv_value1, 64, 0x2);
     err = fsst->iterator_open(&kv_it, NULL);
     err = fsst->iterator_next(kv_it, kv_name, 16);
-    utest_printf("It Next - err: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
     err = fsst->iterator_next(kv_it, kv_name, 16);
-    utest_printf("It Next - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
     err = fsst->iterator_close(kv_it);
 
-
-    utest_printf("(+) It Close after Open\n");
+    /* OK Iteraor Close - close after open*/
     err = fsst->iterator_open(&kv_it, NULL);
     err = fsst->iterator_close(kv_it);
-    utest_printf("It Close - err: %d\n", err);
-    TEST_ASSERT_NOT_EQUAL(0, err);
+    TEST_ASSERT_EQUAL(0, err);
 
-    KVStore::set_handle_t handle;
-    err = fsst->set_start(&handle, "key1", 64, 0x2);
-
-    utest_printf("(-) set_start handle NULL\n");
+    /* Fail Set_Start - NULL handle */
     err = fsst->set_start(NULL, "key1", 64, 0x2);
-    utest_printf("Set Start - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-) set_start key NULL\n");
+    /* Fail Set_Start - NULL key */
+    KVStore::set_handle_t handle;
     err = fsst->set_start(&handle, NULL, 64, 0x2);
-    utest_printf("Set Start - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(+) set_start final size 0\n");
+    /* OK Set_Finalize - finalize after start, size 0 */
     err = fsst->set_start(&handle, "key1", 0, 0x2);
-    utest_printf("Set Start - err: %d\n", err);
     err = fsst->set_finalize(handle);
-    utest_printf("Set Finalize - err: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
-    utest_printf("(-) set_add handle NULL\n");
+    /* Fail Set_Add_Data - NULL handle */
     err = fsst->set_add_data(NULL, "setvalue1", 10);
-    utest_printf("Set  Add - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
 
-    utest_printf("(-) set_add value NULL\n");
+    /* Fail Set_Add_Data - NULL value */
     err = fsst->set_start(&handle, "key1", 0, 0x2);
     err = fsst->set_add_data(handle, NULL, 10);
-    utest_printf("Set  Add - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
     err = fsst->set_finalize(handle);
 
-    utest_printf("(+) set_add size 0\n");
-    utest_printf("OFR_DBG Calling Set_Start\n");
+    /* OK Set_Add_Data - value size 0 */
     err = fsst->set_start(&handle, "key1", 10, 0x2);
-    utest_printf("Set Start - Size 10, err: %d\n", err);
-    utest_printf("OFR_DBG Calling Set_Add_Data\n");
     err = fsst->set_add_data(handle, "abcde12345", 10);
-    utest_printf("Set  Add 10 - err: %d\n", err);
-    memset(kv_buf, 0 ,64);
-    utest_printf("OFR_DBG Calling Get\n");
-    err = fsst->get(kv_key1, kv_buf, 10, &actual_size, 0/*offset*/);
-    utest_printf("Get1 Before Finalize - err: %d, data: %s\n", err, kv_buf);
+    memset(kv_buf, 0, 64);
+    err = fsst->get(kv_key1, kv_buf, 10, &actual_size, 0);
     err = fsst->set_add_data(handle, "abcde12345", 0);
-    utest_printf("Set  Add 0 - err: %d\n", err);
     err = fsst->set_finalize(handle);
-    utest_printf("Set Finalize - err: %d\n", err);
 
-    utest_printf("(+) Get Key1 After Finalize\n");
-    memset(kv_buf, 0 ,64);
-    err = fsst->get(kv_key1, kv_buf, 10, &actual_size, 0/*offset*/);
-    utest_printf("Get1 - err: %d, data: %s\n", err, kv_buf);
+    /* OK Get after Finalize */
+    memset(kv_buf, 0, 64);
+    err = fsst->get(kv_key1, kv_buf, 12, &actual_size, 0);
+    TEST_ASSERT_EQUAL(0, strcmp(kv_buf, "abcde12345"));
 
-
-    utest_printf("(-) set_add exceed final size\n");
+    /* FAIL SET_Add_Data - exceed final size  */
     err = fsst->set_start(&handle, "key1", 10, 0x2);
-    utest_printf("Set Start - Size 10, err: %d\n", err);
     err = fsst->set_add_data(handle, "abcde12345", 5);
-    utest_printf("Set  Add 5 - err: %d\n", err);
     err = fsst->set_add_data(handle, "abcde12345", 10);
-    utest_printf("Set  Add 10 - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
     err = fsst->set_add_data(handle, "abcde12345", 5);
-    utest_printf("Set  Add 5 - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
     err = fsst->set_finalize(handle);
-    utest_printf("Set Finalize - err: %d\n", err);
 
-    utest_printf("(-) set_add size doesnt match final size\n");
+    /* FAIL SET_Add_Data - final size smaller than set at start */
     err = fsst->set_start(&handle, "key1", 10, 0x2);
-    utest_printf("Set Start - Size 10, err: %d\n", err);
     err = fsst->set_add_data(handle, "abcde12345", 5);
-    utest_printf("Set  Add 5 - err: %d\n", err);
     err = fsst->set_add_data(handle, "abcde12345", 3);
-    utest_printf("Set  Add 3 - err: %d\n", err);
     err = fsst->set_finalize(handle);
-    utest_printf("Set Finalize - err: %d\n", err);
     TEST_ASSERT_NOT_EQUAL(0, err);
-
-
 
     err = fsst->deinit();
-    utest_printf("deinit fsst: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
     err = bd.deinit();
@@ -492,9 +402,9 @@ void test_file_system_store_edge_cases()
 
 void test_file_system_store_multi_threads()
 {
-	char kv_buf[64] = {0};
+    char kv_buf[64] = {0};
 
-	utest_printf("\nTest Multi Threaded FileSystemStore Set Starts..\n");
+    utest_printf("\nTest Multi Threaded FileSystemStore Set Starts..\n");
 
     int err = bd.init();
     TEST_ASSERT_EQUAL(0, err);
@@ -505,35 +415,33 @@ void test_file_system_store_multi_threads()
     err = fs.mount(&bd);
 
     if (err) {
-    	err = fs.reformat(&bd);
-    	TEST_ASSERT_EQUAL(0, err);
+        err = fs.reformat(&bd);
+        TEST_ASSERT_EQUAL(0, err);
     }
 
     FileSystemStore *fsst = new FileSystemStore(&fs);
 
     err = fsst->init();
-    utest_printf("init fsst: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
     err = fsst->reset();
-    utest_printf("Reset FSST, err: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
     thread_data_t thread_data[3];
 
     /* Thread Access Test Starts */
-    rtos::Thread set_thread[3];
+    rtos::Thread set_thread[FSST_TEST_NUM_OF_THREADS];
 
     osStatus threadStatus;
     int i_ind = 0;
 
-    for (i_ind=0; i_ind < 3; i_ind++) {
+    for (i_ind = 0; i_ind < FSST_TEST_NUM_OF_THREADS; i_ind++) {
         thread_data[i_ind].fsst = fsst;
-        thread_data[i_ind].thread_num = i_ind+1;
-        threadStatus = set_thread[i_ind].start(test_set_thread_job, (void *)&(thread_data[i_ind]));
+        thread_data[i_ind].thread_num = i_ind + 1;
+        threadStatus = set_thread[i_ind].start(test_set_thread_job, (void *) & (thread_data[i_ind]));
     }
 
-    for (i_ind=0; i_ind < 3; i_ind++) {
+    for (i_ind = 0; i_ind < FSST_TEST_NUM_OF_THREADS; i_ind++) {
         set_thread[i_ind].join();
     }
 
@@ -544,21 +452,19 @@ void test_file_system_store_multi_threads()
 
     size_t actual_size = 0;
 
-    for (i_ind=1; i_ind < 4; i_ind++) {
-    	memset(kv_buf, 0 ,64);
-    	strcat(&kv_value[10],itoa(i_ind, thread_str, 10));
-    	strcat(&kv_key[3],itoa(i_ind, thread_str, 10));
-    	err = fsst->get(kv_key, kv_buf, 10, &actual_size, 0);
-    	TEST_ASSERT_EQUAL(0, err);
-    	utest_printf("Key File: %s, value: %s\n",kv_key, kv_buf);
-    	TEST_ASSERT_EQUAL(0, strcmp(kv_value,kv_buf));
+    for (i_ind = 1; i_ind < (FSST_TEST_NUM_OF_THREADS + 1); i_ind++) {
+        memset(kv_buf, 0, 64);
+        strcpy(&kv_value[10], itoa(i_ind, thread_str, 10));
+        strcpy(&kv_key[3], itoa(i_ind, thread_str, 10));
+        err = fsst->get(kv_key, kv_buf, 12, &actual_size, 0);
+        TEST_ASSERT_EQUAL(0, err);
+        TEST_ASSERT_EQUAL(0, strcmp(kv_value, kv_buf));
     }
 
-	err = fsst->reset();
-	TEST_ASSERT_EQUAL(0, err);
+    err = fsst->reset();
+    TEST_ASSERT_EQUAL(0, err);
 
     err = fsst->deinit();
-    utest_printf("deinit fsst: %d\n", err);
     TEST_ASSERT_EQUAL(0, err);
 
     err = bd.deinit();
