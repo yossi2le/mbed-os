@@ -36,7 +36,7 @@ typedef struct {
 kv_map_entry_t kv_map_table[MAX_ATTACHED_KVS];
 int kv_num_attached_kvs;
 
-static int is_initialize = 0;
+static int is_initialized = 0;
 static SingletonPtr<PlatformMutex> mutex;
 
 int kv_init()
@@ -45,14 +45,14 @@ int kv_init()
 
     mutex->lock();
 
-    if (is_initialize) {
+    if (is_initialized) {
         goto exit;
     }
 
     kv_num_attached_kvs = 0;
     memset(&kv_map_table, 0, sizeof(kv_map_table));
 
-    is_initialize = 1;
+    is_initialized = 1;
 
 exit:
     mutex->unlock();
@@ -65,18 +65,19 @@ int kv_attach(const char *partition_name, KVStore *kv_instance)
 
     mutex->lock();
 
-    if (!is_initialize) {
+    if (!is_initialized) {
         ret = MBED_ERROR_NOT_READY;
         goto exit;
     }
 
     if (kv_num_attached_kvs >= MAX_ATTACHED_KVS) {
-        ret =  MBED_ERROR_INVALID_SIZE;
+        ret =  MBED_ERROR_OUT_OF_MEMORY;
         goto exit;
     }
 
     kv_map_table[kv_num_attached_kvs].partition_name = strdup(partition_name);
     kv_map_table[kv_num_attached_kvs].kvstore_instance = kv_instance;
+    kv_num_attached_kvs++;
 
 exit:
     mutex->unlock();
@@ -89,13 +90,13 @@ int kv_detach(const char *partition_name)
 
     mutex->lock();
 
-    if (!is_initialize) {
+    if (!is_initialized) {
         ret = MBED_ERROR_NOT_READY;
         goto exit;
     }
 
     ret = MBED_ERROR_ITEM_NOT_FOUND;
-    for (int i = 0; i < MAX_ATTACHED_KVS; i++ ) {
+    for (int i = 0; i < kv_num_attached_kvs; i++ ) {
 
         if (strcmp(partition_name, kv_map_table[i].partition_name) != 0) {
             continue;
@@ -107,7 +108,7 @@ int kv_detach(const char *partition_name)
         memcpy(&kv_map_table[i], &kv_map_table[i + 1], sizeof(kv_map_entry_t) * (MAX_ATTACHED_KVS - i - 1));
         kv_map_table[MAX_ATTACHED_KVS - 1].partition_name = NULL;
         kv_map_table[MAX_ATTACHED_KVS - 1].kvstore_instance = NULL;
-
+        kv_num_attached_kvs--;
         ret = MBED_SUCCESS;
         break;
     }
@@ -123,22 +124,25 @@ int kv_deinit()
 
     mutex->lock();
 
-    if (!is_initialize) {
+    if (!is_initialized) {
         ret = MBED_ERROR_NOT_READY;
         goto exit;
     }
 
-    for (int i = 0; i < MAX_ATTACHED_KVS; i++ ) {
+    for (int i = 0; i < kv_num_attached_kvs; i++ ) {
 
         if (kv_map_table[i].kvstore_instance == NULL) {
             goto exit;
         }
 
         free(kv_map_table[i].partition_name);
-        kv_map_table[i].kvstore_instance->deinit();
+        if (kv_map_table[i].kvstore_instance != NULL) {
+            kv_map_table[i].kvstore_instance->deinit();
+        }
         kv_map_table[i].partition_name = NULL;
         kv_map_table[i].kvstore_instance = NULL;
     }
+    kv_num_attached_kvs = 0;
 
 exit:
     mutex->unlock();
@@ -155,7 +159,7 @@ int kv_lookup(const char *full_name, KVStore **kv_instance, char *key)
 
     mutex->lock();
 
-    if (!is_initialize) {
+    if (!is_initialized) {
         ret = MBED_ERROR_NOT_READY;
         goto exit;
     }
@@ -170,7 +174,7 @@ int kv_lookup(const char *full_name, KVStore **kv_instance, char *key)
     }
 
     int i;
-    for (i = 0; i < MAX_ATTACHED_KVS; i++ ) {
+    for (i = 0; i < kv_num_attached_kvs; i++ ) {
 
         if (strcmp(str, kv_map_table[i].partition_name) != 0) {
             continue;
@@ -181,7 +185,7 @@ int kv_lookup(const char *full_name, KVStore **kv_instance, char *key)
     }
 
 
-    if (i == MAX_ATTACHED_KVS) {
+    if (i == kv_num_attached_kvs) {
         ret = MBED_ERROR_ITEM_NOT_FOUND;
         goto exit;
     }

@@ -107,6 +107,7 @@ int kv_set_start(kv_set_handle_t *handle, const char *key, size_t final_data_siz
     if (*handle == NULL) {
         return MBED_ERROR_FAILED_OPERATION;
     }
+    (*handle)->handle_is_open = false;
 
     KVStore *kv_instance = NULL;
     KVStore::set_handle_t *inner_handle = new KVStore::set_handle_t;
@@ -158,6 +159,7 @@ int kv_iterator_open(kv_iterator_t *it, const char *full_prefix)
     if (*it == NULL) {
         return MBED_ERROR_FAILED_OPERATION;
     }
+    (*it)->iterator_is_open = false;
 
     KVStore *kv_instance = NULL;
     char key[KV_MAX_KEY_LENGTH];
