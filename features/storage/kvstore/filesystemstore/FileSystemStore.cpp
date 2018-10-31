@@ -18,6 +18,7 @@
 #include "Dir.h"
 #include "File.h"
 #include "BlockDevice.h"
+#include "mbed_error.h"
 
 #include "mbed_trace.h"
 #define TRACE_GROUP "FSST"
@@ -48,7 +49,7 @@ FileSystemStore::FileSystemStore(FileSystem *fs) : _fs(fs),
 
 int FileSystemStore::init()
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
 
     _mutex.lock();
 
@@ -66,7 +67,7 @@ int FileSystemStore::init()
         tr_info("KV Dir: %s, doesnt exist - creating new.. ", _cfg_fs_path); //TBD verify ERRNO NOEXIST
         if (_fs->mkdir(_cfg_fs_path,/* which flags ? */0777) != 0) {
             tr_error("KV Dir: %s, mkdir failed.. ", _cfg_fs_path); //TBD verify ERRNO NOEXIST
-            status = KVSTORE_OS_ERROR;
+            status = MBED_ERROR_FAILED_OPERATION ;
             goto exit_point;
         }
     } else {
@@ -92,19 +93,19 @@ int FileSystemStore::deinit()
     free(_cfg_fs_path);
     delete _full_path_key;
     _mutex.unlock();
-    return KVSTORE_SUCCESS;
+    return MBED_SUCCESS;
 
 }
 
 int FileSystemStore::reset()
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
     Dir kv_dir;
     struct dirent dir_ent;
 
     _mutex.lock();
     if (false == _is_initialized) {
-        status = KVSTORE_UNINITIALIZED;
+        status = MBED_ERROR_NOT_READY;
         goto exit_point;
     }
 
@@ -130,33 +131,33 @@ exit_point:
 
 int FileSystemStore::set(const char *key, const void *buffer, size_t size, uint32_t create_flags)
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
     set_handle_t handle;
 
     if (false == _is_initialized) {
-        status = KVSTORE_UNINITIALIZED;
+        status = MBED_ERROR_NOT_READY;
         goto exit_point;
     }
 
     if ((key == NULL) || (size > KVStore::MAX_KEY_SIZE) || ((buffer == NULL) && (size > 0)) ) {
-        status = KVSTORE_BAD_VALUE;
+        status = MBED_ERROR_INVALID_SIZE;
         goto exit_point;
     }
 
     status = set_start(&handle, key, size, create_flags);
-    if (status != KVSTORE_SUCCESS) {
+    if (status != MBED_SUCCESS) {
         tr_error("FSST Set set_start Failed: %d", status);
         goto exit_point;
     }
 
     status = set_add_data(handle, buffer, size);
-    if (status != KVSTORE_SUCCESS) {
+    if (status != MBED_SUCCESS) {
         tr_error("FSST Set set_add_data Failed: %d", status);
         goto exit_point;
     }
 
     status = set_finalize(handle);
-    if (status != KVSTORE_SUCCESS) {
+    if (status != MBED_SUCCESS) {
         tr_error("FSST Set set_finalize Failed: %d", status);
         goto exit_point;
     }
@@ -168,7 +169,7 @@ exit_point:
 
 int FileSystemStore::get(const char *key, void *buffer, size_t buffer_size, size_t *actual_size, size_t offset)
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
 
     File kv_file;
     size_t kv_file_size = 0;
@@ -177,13 +178,13 @@ int FileSystemStore::get(const char *key, void *buffer, size_t buffer_size, size
     _mutex.lock();
 
     if (false == _is_initialized) {
-        status = KVSTORE_UNINITIALIZED;
+        status = MBED_ERROR_NOT_READY;
         goto exit_point;
     }
 
     key_metadata_t key_metadata;
 
-    if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) != KVSTORE_SUCCESS ) {
+    if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) != MBED_SUCCESS ) {
         tr_error("File Verification Failed: %s, status: %d", key, status);
         goto exit_point;
     }
@@ -192,14 +193,14 @@ int FileSystemStore::get(const char *key, void *buffer, size_t buffer_size, size
     // Actual size is the minimum of buffer_size and remainder of data in file (file's data size - offset)
     value_actual_size = buffer_size;
     if (offset > kv_file_size) {
-        status = KVSTORE_DATA_CORRUPT;
+        status = MBED_ERROR_INVALID_DATA_DETECTED;
         goto exit_point;
     } else if ((kv_file_size - offset) < buffer_size) {
         value_actual_size = kv_file_size - offset;
     }
 
     if ((buffer == NULL) && (value_actual_size > 0)) {
-        status = KVSTORE_DATA_CORRUPT;
+        status = MBED_ERROR_INVALID_DATA_DETECTED;
         goto exit_point;
     }
 
@@ -212,8 +213,8 @@ int FileSystemStore::get(const char *key, void *buffer, size_t buffer_size, size
     kv_file.read(buffer, value_actual_size);
 
 exit_point:
-    if ( (status == KVSTORE_SUCCESS) ||
-            (status == KVSTORE_DATA_CORRUPT) ) {
+    if ( (status == MBED_SUCCESS) ||
+            (status == MBED_ERROR_INVALID_DATA_DETECTED) ) {
         kv_file.close();
     }
     _mutex.unlock();
@@ -223,10 +224,10 @@ exit_point:
 
 int FileSystemStore::get_info(const char *key, info_t *info)
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
 
     if (info == NULL) {
-        return KVSTORE_BAD_VALUE;
+        return MBED_ERROR_INVALID_ARGUMENT;
     }
 
     File kv_file;
@@ -234,13 +235,13 @@ int FileSystemStore::get_info(const char *key, info_t *info)
     _mutex.lock();
 
     if (false == _is_initialized) {
-        status = KVSTORE_UNINITIALIZED;
+        status = MBED_ERROR_NOT_READY;
         goto exit_point;
     }
 
     key_metadata_t key_metadata;
 
-    if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) != KVSTORE_SUCCESS ) {
+    if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) != MBED_SUCCESS ) {
         tr_error("File Verification Failed: %s, status: %d", key, status);
         goto exit_point;
     }
@@ -249,8 +250,8 @@ int FileSystemStore::get_info(const char *key, info_t *info)
     info->flags = key_metadata.user_flags;
 
 exit_point:
-    if ( (status == KVSTORE_SUCCESS) ||
-            (status == KVSTORE_DATA_CORRUPT) ) {
+    if ( (status == MBED_SUCCESS) ||
+            (status == MBED_ERROR_INVALID_DATA_DETECTED) ) {
         kv_file.close();
     }
     _mutex.unlock();
@@ -264,33 +265,35 @@ int FileSystemStore::remove(const char *key)
     key_metadata_t key_metadata;
 
     if (key == NULL) {
-        return KVSTORE_BAD_VALUE;
+        return MBED_ERROR_INVALID_ARGUMENT;
     }
 
     _mutex.lock();
 
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
 
     if (false == _is_initialized) {
-        status = KVSTORE_UNINITIALIZED;
+        status = MBED_ERROR_NOT_READY;
         goto exit_point;
     }
 
     /* If File Exists and is Valid, then check its Write Once Flag to verify its disabled before removing */
     /* If File exists and is not valid, or is Valid and not Write-Onced then remove it */
-    if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) == KVSTORE_SUCCESS ) {
+    if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) == MBED_SUCCESS ) {
         tr_error("File: %s, Exists Verifying Write Once Disabled before setting new value", _full_path_key);
         if (key_metadata.user_flags & KVStore::WRITE_ONCE_FLAG) {
             kv_file.close();
-            status = KVSTORE_WRITE_ONCE_ERROR;
+            status = MBED_ERROR_WRITE_PROTECTED;
             goto exit_point;
         }
-    } else if (status == KVSTORE_NOT_FOUND)  {
+    } else if (status == MBED_ERROR_ITEM_NOT_FOUND)  {
         goto exit_point;
     }
     kv_file.close();
 
-    status = _fs->remove(_full_path_key);
+    if (0 != _fs->remove(_full_path_key)) {
+        status =  MBED_ERROR_FAILED_OPERATION;
+    }
 
 exit_point:
     _mutex.unlock();
@@ -300,7 +303,7 @@ exit_point:
 // Incremental set API
 int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t final_data_size, uint32_t create_flags)
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
     inc_set_handle_t *set_handle = NULL;
     File kv_file;
     key_metadata_t key_metadata;
@@ -309,28 +312,28 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
     _mutex.lock();
 
     if ((key == NULL) || (handle == NULL) ) {
-        status = KVSTORE_BAD_VALUE;
+        status = MBED_ERROR_INVALID_ARGUMENT;
         goto exit_point;
     }
 
     /* If File Exists and is Valid, then check its Write Once Flag to verify its disabled before setting */
     /* If File exists and is not valid, or is Valid and not Write-Onced then erase it */
-    if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) == KVSTORE_SUCCESS ) {
+    if ( (status = _verify_key_file(key, &key_metadata, &kv_file)) == MBED_SUCCESS ) {
         tr_error("File: %s, Exists Verifying Write Once Disabled before setting new value", _full_path_key);
         if (key_metadata.user_flags & KVStore::WRITE_ONCE_FLAG) {
             kv_file.close();
-            status = KVSTORE_WRITE_ONCE_ERROR;
+            status = MBED_ERROR_WRITE_PROTECTED;
             goto exit_point;
         }
     }
 
-    if (status != KVSTORE_NOT_FOUND)  {
+    if (status != MBED_ERROR_ITEM_NOT_FOUND)  {
         kv_file.close();
     }
 
-    if ( (status = kv_file.open(_fs, _full_path_key, O_WRONLY | O_CREAT | O_TRUNC)) != KVSTORE_SUCCESS ) {
+    if ( (status = kv_file.open(_fs, _full_path_key, O_WRONLY | O_CREAT | O_TRUNC)) != MBED_SUCCESS ) {
         tr_info("set_start failed to open: %s, for writing, err: %d", _full_path_key, status);
-        status = KVSTORE_OS_ERROR;
+        status = MBED_ERROR_FAILED_OPERATION ;
         goto exit_point;
     }
     _cur_inc_data_size = 0;
@@ -349,7 +352,7 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
     kv_file.write(&key_metadata, sizeof(key_metadata_t));
     kv_file.close();
 exit_point:
-    if (status != KVSTORE_SUCCESS) {
+    if (status != MBED_SUCCESS) {
         _mutex.unlock();
     }
     return status;
@@ -357,31 +360,31 @@ exit_point:
 
 int FileSystemStore::set_add_data(set_handle_t handle, const void *value_data, size_t data_size)
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
     size_t added_data = 0;
     inc_set_handle_t *set_handle = (inc_set_handle_t *)handle;
     File kv_file;
 
     if ((value_data == NULL) || (handle == NULL) ) {
-        status = KVSTORE_BAD_VALUE;
+        status = MBED_ERROR_INVALID_ARGUMENT;
         goto exit_point;
     }
 
     if ( (_cur_inc_data_size + data_size) > set_handle->data_size ) {
         tr_error("Added Data exceeds set_start final size - corrupted data, deleteing file: %s", _full_path_key);
         _fs->remove(_full_path_key);
-        status = KVSTORE_DATA_CORRUPT;
+        status = MBED_ERROR_INVALID_DATA_DETECTED;
         goto exit_point;
     }
 
     if (0 != kv_file.open(_fs, _full_path_key, O_WRONLY | O_APPEND)) {
-        status = KVSTORE_NOT_FOUND;
+        status = MBED_ERROR_ITEM_NOT_FOUND;
         goto exit_point;
     }
 
     added_data = kv_file.write(value_data, data_size);
     if (added_data != data_size) {
-        status = KVSTORE_OS_ERROR;
+        status = MBED_ERROR_FAILED_OPERATION ;
     }
     _cur_inc_data_size += added_data;
 
@@ -395,23 +398,23 @@ exit_point:
 
 int FileSystemStore::set_finalize(set_handle_t handle)
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
     inc_set_handle_t *set_handle = NULL;
 
     if (handle == NULL) {
-        status =  KVSTORE_BAD_VALUE;
+        status =  MBED_ERROR_INVALID_ARGUMENT;
         goto exit_point;
     }
 
     set_handle = (inc_set_handle_t *)handle;
 
     if (set_handle->key == NULL) {
-        status = KVSTORE_DATA_CORRUPT;
+        status = MBED_ERROR_INVALID_DATA_DETECTED;
     } else {
         if (_cur_inc_data_size != set_handle->data_size ) {
             tr_error("Added Data doesn't match set_start final size - corrupted data, deleteing file: %s", _full_path_key);
             _fs->remove(_full_path_key);
-            status = KVSTORE_DATA_CORRUPT;
+            status = MBED_ERROR_INVALID_DATA_DETECTED;
         }
 
         free(set_handle->key);
@@ -421,7 +424,7 @@ int FileSystemStore::set_finalize(set_handle_t handle)
     _cur_inc_data_size = 0;
 
 exit_point:
-    if (status != KVSTORE_BAD_VALUE) {
+    if (status != MBED_ERROR_INVALID_ARGUMENT) {
         _mutex.unlock();
     }
 
@@ -430,17 +433,17 @@ exit_point:
 
 int FileSystemStore::iterator_open(iterator_t *it, const char *prefix)
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
     Dir *kv_dir = NULL;
     key_iterator_handle_t *key_it = NULL;
 
     if (it == NULL) {
-        return KVSTORE_BAD_VALUE;
+        return MBED_ERROR_INVALID_ARGUMENT;
     }
 
     _mutex.lock();
     if (false == _is_initialized) {
-        status = KVSTORE_UNINITIALIZED;
+        status = MBED_ERROR_NOT_READY;
         goto exit_point;
     }
     key_it = new key_iterator_handle_t;
@@ -458,7 +461,7 @@ int FileSystemStore::iterator_open(iterator_t *it, const char *prefix)
             free(key_it->prefix);
         }
         delete key_it;
-        status = KVSTORE_NOT_FOUND;
+        status = MBED_ERROR_ITEM_NOT_FOUND;
         goto exit_point;
     }
 
@@ -476,7 +479,7 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 {
     Dir *kv_dir;
     struct dirent kv_dir_ent;
-    int status = KVSTORE_NOT_FOUND;
+    int status = MBED_ERROR_ITEM_NOT_FOUND;
     key_iterator_handle_t *key_it = NULL;
     size_t key_name_size = KVStore::MAX_KEY_SIZE;
     if (key_size < key_name_size) {
@@ -485,14 +488,14 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
 
     _mutex.lock();
     if (false == _is_initialized) {
-        status = KVSTORE_UNINITIALIZED;
+        status = MBED_ERROR_NOT_READY;
         goto exit_point;
     }
 
     key_it = (key_iterator_handle_t *)it;
 
     if (key_name_size < strlen(key_it->prefix)) {
-        status = KVSTORE_BAD_VALUE;
+        status = MBED_ERROR_INVALID_SIZE;
         goto exit_point;
     }
 
@@ -507,12 +510,12 @@ int FileSystemStore::iterator_next(iterator_t it, char *key, size_t key_size)
         if ( (key_it->prefix == NULL) ||
                 (strncmp(kv_dir_ent.d_name, key_it->prefix, strnlen(key_it->prefix, key_name_size - 1)) == 0) ) {
             if (key_name_size < strlen(kv_dir_ent.d_name)) {
-                status = KVSTORE_BAD_VALUE;
+                status = MBED_ERROR_INVALID_SIZE;
                 break;
             }
             strncpy(key, kv_dir_ent.d_name, key_name_size);
             key[key_name_size - 1] = '\0';
-            status = KVSTORE_SUCCESS;
+            status = MBED_SUCCESS;
             break;
         }
     }
@@ -524,12 +527,12 @@ exit_point:
 
 int FileSystemStore::iterator_close(iterator_t it)
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
     key_iterator_handle_t *key_it = (key_iterator_handle_t *)it;
 
     _mutex.lock();
     if (key_it == NULL) {
-        status = KVSTORE_BAD_VALUE;
+        status = MBED_ERROR_INVALID_ARGUMENT;
         goto exit_point;
     }
 
@@ -551,10 +554,10 @@ exit_point:
 
 int FileSystemStore::_verify_key_file(const char *key, key_metadata_t *key_metadata, File *kv_file)
 {
-    int status = KVSTORE_SUCCESS;
+    int status = MBED_SUCCESS;
 
     if (key == NULL) {
-        status = KVSTORE_BAD_VALUE;
+        status = MBED_ERROR_INVALID_ARGUMENT;
         goto exit_point;
     }
 
@@ -562,7 +565,7 @@ int FileSystemStore::_verify_key_file(const char *key, key_metadata_t *key_metad
 
     if (0 != kv_file->open(_fs, _full_path_key, O_RDONLY) ) {
         tr_info("Couldn't read: %s", _full_path_key);
-        status = KVSTORE_NOT_FOUND;
+        status = MBED_ERROR_ITEM_NOT_FOUND;
         goto exit_point;
     }
 
@@ -571,7 +574,7 @@ int FileSystemStore::_verify_key_file(const char *key, key_metadata_t *key_metad
 
     if ((key_metadata->magic != FSST_MAGIC) ||
             (key_metadata->revision > FSST_REVISION) ) {
-        status = KVSTORE_DATA_CORRUPT;
+        status = MBED_ERROR_INVALID_DATA_DETECTED;
         goto exit_point;
     }
 
