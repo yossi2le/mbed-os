@@ -19,37 +19,11 @@
 #include "KVStore.h"
 #include "FileSystem.h"
 
-#define FSST_REVISION 1
-#define FSST_MAGIC 0x46535354 // "FSST" hex 'magic' signature
-#define FSST_PATH_NAME_SIZE 16
 #ifndef FSST_FOLDER_PATH
 #define FSST_FOLDER_PATH "$fsst$" //default FileSystemStore folder path on fs
 #endif
 
 namespace mbed {
-
-//Important data structures
-// Key metadata
-typedef struct {
-    uint32_t magic;
-    uint16_t metadata_size;
-    uint16_t revision;
-    uint32_t user_flags;
-} key_metadata_t;
-
-// incremental set handle
-typedef struct {
-    char *key;
-    uint32_t create_flags;
-    size_t data_size;
-} inc_set_handle_t;
-
-// iterator handle
-typedef struct {
-    void *dir_handle;
-    char *prefix;
-} key_iterator_handle_t;
-
 
 /** FileSystemStore for Secure Store
  *
@@ -200,15 +174,29 @@ public:
 
 private:
 
+    // Key metadata
+    typedef struct {
+        uint32_t magic;
+        uint16_t metadata_size;
+        uint16_t revision;
+        uint32_t user_flags;
+    } key_metadata_t;
+
     /**
-     * Build Full name of Key as a combination of FSST folder and key name
+     * @brief Build Full name class member from Key, as a combination of FSST folder and key name
+     *
+     * @param[in]  key_src              key file name
      *
      * @returns 0 on success or a negative error code on failure
      */
     int _build_full_path_key(const char *key_src);
 
     /**
-     * Verify Key file validity
+     * @brief Verify Key file metadata validity and open it if valid
+     *
+     * @param[in]  key                  in validated key file name.
+     * @param[in]  key_metadata         Returned key file metadata.
+     * @param[in]  kv_file              opened kv file handle (unless file doesnt exist)
      *
      * @returns 0 on success or a negative error code on failure
      */
@@ -219,8 +207,9 @@ private:
     PlatformMutex _mutex;
 
     bool _is_initialized;
-    char _cfg_fs_path[FSST_PATH_NAME_SIZE + 1]; /* FileSystemStore path on FileSystem */
-    char _full_path_key[FSST_PATH_NAME_SIZE + KVStore::MAX_KEY_SIZE + 1]; /* Full name of Key file currently working on */
+    char *_cfg_fs_path; /* FileSystemStore path name on FileSystem */
+    size_t _cfg_fs_path_size; /* Size of configured FileSystemStore path name on FileSystem */
+    char *_full_path_key; /* Full name of Key file currently working on */
     size_t _cur_inc_data_size; /* Amount of data added to Key file so far, during incremental add data */
 };
 
