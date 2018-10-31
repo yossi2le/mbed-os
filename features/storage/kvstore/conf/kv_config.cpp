@@ -24,6 +24,7 @@
 #include "FATFileSystem.h"
 #include "LittleFileSystem.h"
 #include "TDBStore.h"
+#include "mbed_error.h"
 
 #if COMPONENT_FLASHIAP
 #include "FlashIAPBlockDevice.h"
@@ -256,19 +257,19 @@ int _storage_config_TDB_INTERNAL()
 
     kvstore_config.internal_bd = GET_BLOCKDEVICE(INTERNAL_BLOCKDEVICE_NAME, internal_start_address, internal_size);
     if (kvstore_config.internal_bd == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION;
     }
 
     int ret = kvstore_config.internal_bd->init();
-    if (ret != KVSTORE_SUCCESS) {
-        return KVSTORE_OS_ERROR;
+    if (ret != MBED_SUCCESS) {
+        return MBED_ERROR_FAILED_OPERATION;
     }
 
     static TDBStore tdb_internal(kvstore_config.internal_bd);
     kvstore_config.internal_store = &tdb_internal;
 
     ret = kvstore_config.internal_store->init();
-    if (ret != KVSTORE_SUCCESS) {
+    if (ret != MBED_SUCCESS) {
         return ret;
     }
 
@@ -276,16 +277,16 @@ int _storage_config_TDB_INTERNAL()
         kvstore_config.internal_store; //TODO: change this when secure storage come to live
 
     ret = kv_init();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
     ret = kv_attach(STR(MBED_CONF_STORAGE_DEFAULT_KV), kvstore_config.kvstroe_main_instance);
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
-    return KVSTORE_SUCCESS;
+    return MBED_SUCCESS;
 }
 
 int _storage_config_TDB_EXTERNAL()
@@ -300,19 +301,19 @@ int _storage_config_TDB_EXTERNAL()
 
     kvstore_config.internal_bd = GET_BLOCKDEVICE(INTERNAL_BLOCKDEVICE_NAME, internal_start_address, internal_rbp_size);
     if (kvstore_config.internal_bd == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     int ret = kvstore_config.internal_bd->init();
-    if (ret != KVSTORE_SUCCESS) {
-        return KVSTORE_OS_ERROR;
+    if (ret != MBED_SUCCESS) {
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     static TDBStore tdb_internal(kvstore_config.internal_bd);
     kvstore_config.internal_store = &tdb_internal;
 
     ret = kvstore_config.internal_store->init();
-    if (ret != KVSTORE_SUCCESS) {
+    if (ret != MBED_SUCCESS) {
         return ret;
     }
 
@@ -326,12 +327,12 @@ int _storage_config_TDB_EXTERNAL_NO_RBP()
 
     kvstore_config.external_bd = GET_BLOCKDEVICE(MBED_CONF_STORAGE_TDB_EXTERNAL_BLOCKDEVICE, address, size);
     if (kvstore_config.external_bd == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     int ret = kvstore_config.external_bd->init();
-    if (ret != KVSTORE_SUCCESS) {
-        return KVSTORE_OS_ERROR;
+    if (ret != MBED_SUCCESS) {
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     static TDBStore tdb_external(kvstore_config.external_bd);
@@ -341,21 +342,21 @@ int _storage_config_TDB_EXTERNAL_NO_RBP()
         kvstore_config.external_store; //TODO: change this when secure storage come to live
 
     ret = kvstore_config.external_store->init();
-    if (ret != KVSTORE_SUCCESS) {
+    if (ret != MBED_SUCCESS) {
         return ret;
     }
 
     ret = kv_init();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
     ret = kv_attach(STR(MBED_CONF_STORAGE_DEFAULT_KV), kvstore_config.kvstroe_main_instance);
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
-    return KVSTORE_SUCCESS;
+    return MBED_SUCCESS;
 }
 
 int _storage_config_FILESYSTEM()
@@ -370,19 +371,19 @@ int _storage_config_FILESYSTEM()
 
     kvstore_config.internal_bd = GET_BLOCKDEVICE(INTERNAL_BLOCKDEVICE_NAME, internal_start_address, internal_rbp_size);
     if (kvstore_config.internal_bd == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     int ret = kvstore_config.internal_bd->init();
-    if (ret != KVSTORE_SUCCESS) {
-        return KVSTORE_OS_ERROR;
+    if (ret != MBED_SUCCESS) {
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     static TDBStore tdb_internal(kvstore_config.internal_bd);
     kvstore_config.internal_store = &tdb_internal;
 
     ret = kvstore_config.internal_store->init();
-    if (ret != KVSTORE_SUCCESS) {
+    if (ret != MBED_SUCCESS) {
         return ret;
     }
 
@@ -397,32 +398,32 @@ int _storage_config_FILESYSTEM_NO_RBP()
 
     kvstore_config.external_bd = GET_BLOCKDEVICE(MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_BLOCKDEVICE, address, size);
     if (kvstore_config.external_bd == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     int ret = kvstore_config.external_bd->init();
-    if (KVSTORE_SUCCESS != ret) {
-        return KVSTORE_OS_ERROR;
+    if (MBED_SUCCESS != ret) {
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     kvstore_config.external_fs = GET_FILESYSTEM(MBED_CONF_STORAGE_FILESYSTEM_NO_RBP_FILESYSTEM, kvstore_config.external_bd,
                                  mount_point);
     if (kvstore_config.external_bd == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     ret = kvstore_config.external_fs->mount(kvstore_config.external_bd);
     if (kvstore_config.external_bd == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     kvstore_config.external_store = _get_fileSystemStore(kvstore_config.external_fs);
     if (kvstore_config.external_bd == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION ;
     }
 
     ret = kvstore_config.external_store->init();
-    if (ret != KVSTORE_SUCCESS) {
+    if (ret != MBED_SUCCESS) {
         return ret;
     }
 
@@ -430,22 +431,22 @@ int _storage_config_FILESYSTEM_NO_RBP()
         kvstore_config.external_store; //TODO: change this when secure storage come to live
 
     ret = kv_init();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
     ret = kv_attach(STR(MBED_CONF_STORAGE_DEFAULT_KV), kvstore_config.kvstroe_main_instance);
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
-    return KVSTORE_SUCCESS;
+    return MBED_SUCCESS;
 }
 
 int storage_configuration()
 {
 
-    int ret = KVSTORE_SUCCESS;
+    int ret = MBED_SUCCESS;
 
     mutex->lock();
 
@@ -457,7 +458,7 @@ int storage_configuration()
 
     ret = _STORAGE_CONFIG(MBED_CONF_STORAGE_STORAGE_TYPE);
 
-    if (ret == KVSTORE_SUCCESS) {
+    if (ret == MBED_SUCCESS) {
         is_kv_config_initialize = true;
     }
 

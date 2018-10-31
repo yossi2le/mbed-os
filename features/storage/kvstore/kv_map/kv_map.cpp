@@ -21,6 +21,7 @@
 #include "platform/PlatformMutex.h"
 #include "platform/SingletonPtr.h"
 #include "string.h"
+#include "mbed_error.h"
 
 using namespace mbed;
 
@@ -40,7 +41,7 @@ static SingletonPtr<PlatformMutex> mutex;
 
 int kv_init()
 {
-    int ret = KVSTORE_SUCCESS;
+    int ret = MBED_SUCCESS;
 
     mutex->lock();
 
@@ -60,17 +61,17 @@ exit:
 
 int kv_attach(const char *partition_name, KVStore *kv_instance)
 {
-    int ret = KVSTORE_SUCCESS;
+    int ret = MBED_SUCCESS;
 
     mutex->lock();
 
     if (!is_initialize) {
-        ret = KVSTORE_UNINITIALIZED;
+        ret = MBED_ERROR_NOT_READY;
         goto exit;
     }
 
     if (kv_num_attached_kvs >= MAX_ATTACHED_KVS) {
-        ret =  KVSTORE_BAD_VALUE;
+        ret =  MBED_ERROR_INVALID_SIZE;
         goto exit;
     }
 
@@ -84,16 +85,16 @@ exit:
 
 int kv_detach(const char *partition_name)
 {
-    int ret = KVSTORE_SUCCESS;
+    int ret = MBED_SUCCESS;
 
     mutex->lock();
 
     if (!is_initialize) {
-        ret = KVSTORE_UNINITIALIZED;
+        ret = MBED_ERROR_NOT_READY;
         goto exit;
     }
 
-    ret = KVSTORE_NOT_FOUND;
+    ret = MBED_ERROR_ITEM_NOT_FOUND;
     for (int i = 0; i < MAX_ATTACHED_KVS; i++ ) {
 
         if (strcmp(partition_name, kv_map_table[i].partition_name) != 0) {
@@ -107,7 +108,7 @@ int kv_detach(const char *partition_name)
         kv_map_table[MAX_ATTACHED_KVS - 1].partition_name = NULL;
         kv_map_table[MAX_ATTACHED_KVS - 1].kvstore_instance = NULL;
 
-        ret = KVSTORE_SUCCESS;
+        ret = MBED_SUCCESS;
         break;
     }
 
@@ -118,12 +119,12 @@ exit:
 
 int kv_deinit()
 {
-    int ret = KVSTORE_SUCCESS;
+    int ret = MBED_SUCCESS;
 
     mutex->lock();
 
     if (!is_initialize) {
-        ret = KVSTORE_UNINITIALIZED;
+        ret = MBED_ERROR_NOT_READY;
         goto exit;
     }
 
@@ -148,14 +149,14 @@ exit:
 int kv_lookup(const char *full_name, KVStore **kv_instance, char *key)
 {
 
-    int ret = KVSTORE_SUCCESS;
+    int ret = MBED_SUCCESS;
     char *token = NULL;
     char *str = strdup(full_name);
 
     mutex->lock();
 
     if (!is_initialize) {
-        ret = KVSTORE_UNINITIALIZED;
+        ret = MBED_ERROR_NOT_READY;
         goto exit;
     }
 
@@ -181,11 +182,11 @@ int kv_lookup(const char *full_name, KVStore **kv_instance, char *key)
 
 
     if (i == MAX_ATTACHED_KVS) {
-        ret = KVSTORE_NOT_FOUND;
+        ret = MBED_ERROR_ITEM_NOT_FOUND;
         goto exit;
     }
 exit:
-    if (ret == KVSTORE_SUCCESS) {
+    if (ret == MBED_SUCCESS) {
         //if success extarct the key
         token = strtok(NULL, "/" );
         if (token != NULL) {

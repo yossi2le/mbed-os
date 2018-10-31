@@ -24,10 +24,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <algorithm>
-
-#define KVSTORE_SUCCESS 0
-#define KVSTORE_NOT_FOUND -3
-#define KVSTORE_WRITE_ONCE_ERROR -8
+#include "mbed_error.h"
 
 using namespace utest::v1;
 
@@ -55,83 +52,83 @@ static void kv_global_api_test()
     kv_reset("kv/");
 
     result = kv_set(key1, key1_val1, strlen(key1_val1), 0);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
     result = kv_set(key2, key2_val1, strlen(key2_val1), 0);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
     result = kv_set(key2, key2_val2, strlen(key2_val2), 0);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
     result = kv_set(key2, key2_val3, strlen(key2_val3), 0);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
     result = kv_set(key3, key3_val1, strlen(key3_val1), 0);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
     result = kv_get(key3, get_buf, sizeof(get_buf), &actual_data_size);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
     TEST_ASSERT_EQUAL(strlen(key3_val1), actual_data_size);
     TEST_ASSERT_EQUAL_STRING_LEN(key3_val1, get_buf, strlen(key3_val1));
 
     for (int j = 0; j < 2; j++) {
         result = kv_set(key4, key4_val1, strlen(key4_val1), 0);
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
         result = kv_set(key4, key4_val2, strlen(key4_val2), 0);
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
     }
 
     result = kv_remove(key3);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
     result = kv_remove(key3); //in FileSystemStore this returnes -2 instead of -3 looks like a bug. SD/FAT
     //TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, result);
-    TEST_ASSERT_NOT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_NOT_EQUAL(MBED_SUCCESS, result);
 
     result = kv_get_info(key5, &info);
-    TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, result);
+    TEST_ASSERT_EQUAL(MBED_ERROR_ITEM_NOT_FOUND, result);
 
     result = kv_set(key5, key5_val1, strlen(key5_val1), KV_WRITE_ONCE_FLAG);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
     result = kv_set(key5, key5_val2, strlen(key5_val2), 0);
-    TEST_ASSERT_EQUAL(KVSTORE_WRITE_ONCE_ERROR, result);
+    TEST_ASSERT_EQUAL(MBED_ERROR_WRITE_PROTECTED, result);
 
     result = kv_remove(key5);
-    TEST_ASSERT_EQUAL(KVSTORE_WRITE_ONCE_ERROR, result);
+    TEST_ASSERT_EQUAL(MBED_ERROR_WRITE_PROTECTED, result);
 
     result = kv_get_info(key5, &info);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
     TEST_ASSERT_EQUAL(strlen(key5_val1), info.size);
     TEST_ASSERT_EQUAL(KV_WRITE_ONCE_FLAG, info.flags);
 
     result = kv_get(key5, get_buf, sizeof(get_buf), &actual_data_size);
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
     TEST_ASSERT_EQUAL(strlen(key5_val1), actual_data_size);
     TEST_ASSERT_EQUAL_STRING_LEN(key5_val1, get_buf, strlen(key5_val1));
 
     for (int i = 0; i < 2; i++) {
         result = kv_get(key1, get_buf, sizeof(get_buf), &actual_data_size);
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
         TEST_ASSERT_EQUAL(strlen(key1_val1), actual_data_size);
         TEST_ASSERT_EQUAL_STRING_LEN(key1_val1, get_buf, strlen(key1_val1));
 
         result = kv_get(key2, get_buf, sizeof(get_buf), &actual_data_size);
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
         TEST_ASSERT_EQUAL(strlen(key2_val3), actual_data_size);
         TEST_ASSERT_EQUAL_STRING_LEN(key2_val3, get_buf, strlen(key2_val3));
 
         result = kv_get(key3, get_buf, sizeof(get_buf), &actual_data_size);
-        TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, result);
+        TEST_ASSERT_EQUAL(MBED_ERROR_ITEM_NOT_FOUND, result);
 
         result = kv_get(key4, get_buf, sizeof(get_buf), &actual_data_size);
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
         TEST_ASSERT_EQUAL(strlen(key4_val2), actual_data_size);
         TEST_ASSERT_EQUAL_STRING_LEN(key4_val2, get_buf, strlen(key4_val2));
 
         result = kv_get(key5, get_buf, sizeof(get_buf), &actual_data_size);
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
         TEST_ASSERT_EQUAL(strlen(key5_val1), actual_data_size);
         TEST_ASSERT_EQUAL_STRING_LEN(key5_val1, get_buf, strlen(key5_val1));
 
@@ -139,10 +136,10 @@ static void kv_global_api_test()
         char *char_get_buf = reinterpret_cast <char *> (get_buf);
 
         result = kv_iterator_open(&it, "This");
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
         result = kv_iterator_next(it, char_get_buf, sizeof(get_buf));
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
         char * str_dup = strdup(key4);
         char *token = strtok(str_dup, "/" );
@@ -158,7 +155,7 @@ static void kv_global_api_test()
         TEST_ASSERT_EQUAL(true, got_key4 || got_key5);
 
         result = kv_iterator_next(it, char_get_buf, sizeof(get_buf));
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
         if (got_key4) {
             str_dup = strdup(key5);
             token = strtok(str_dup, "/" );
@@ -174,14 +171,14 @@ static void kv_global_api_test()
         }
 
         result = kv_iterator_next(it, (char *)get_buf, sizeof(get_buf));
-        TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, result);
+        TEST_ASSERT_EQUAL(MBED_ERROR_ITEM_NOT_FOUND, result);
 
         result = kv_iterator_close(it);
-        TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+        TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
     }
 
-    TEST_ASSERT_EQUAL(KVSTORE_SUCCESS, result);
+    TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 }
 
 utest::v1::status_t greentea_failure_handler(const Case *const source, const failure_t reason)

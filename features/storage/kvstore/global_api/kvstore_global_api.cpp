@@ -18,6 +18,7 @@
 #include "kv_config.h"
 #include "kv_map.h"
 #include "KVStore.h"
+#include "mbed_error.h"
 
 using namespace mbed;
 
@@ -38,7 +39,7 @@ struct _opaque_kv_key_iterator {
 int kv_set(const char *full_name_key, const void *buffer, size_t size, uint32_t create_flags)
 {
     int ret = storage_configuration();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
@@ -52,7 +53,7 @@ int kv_set(const char *full_name_key, const void *buffer, size_t size, uint32_t 
 int kv_get(const char *full_name_key, void *buffer, size_t buffer_size, size_t *actual_size)
 {
     int ret = storage_configuration();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
@@ -65,7 +66,7 @@ int kv_get(const char *full_name_key, void *buffer, size_t buffer_size, size_t *
 int kv_get_info(const char *full_name_key, kv_info_t *info)
 {
     int ret = storage_configuration();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
@@ -74,7 +75,7 @@ int kv_get_info(const char *full_name_key, kv_info_t *info)
     kv_lookup(full_name_key, &kv_instance, key);
     KVStore::info_t inner_info;
     ret =  kv_instance->get_info(key, &inner_info);
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
     info->flags = inner_info.flags;
@@ -85,7 +86,7 @@ int kv_get_info(const char *full_name_key, kv_info_t *info)
 int kv_remove(const char *full_name_key)
 {
     int ret = storage_configuration();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
@@ -98,13 +99,13 @@ int kv_remove(const char *full_name_key)
 int kv_set_start(kv_set_handle_t *handle, const char *key, size_t final_data_size, uint32_t create_flags)
 {
     int ret = storage_configuration();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
     (*handle) = new _opaque_kv_set_handle;
     if (*handle == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION;
     }
 
     KVStore *kv_instance = NULL;
@@ -112,7 +113,7 @@ int kv_set_start(kv_set_handle_t *handle, const char *key, size_t final_data_siz
     char out_key[KV_MAX_KEY_LENGTH];
     kv_lookup(key, &kv_instance, out_key);
     ret = kv_instance->set_start(inner_handle, out_key, final_data_size, create_flags);
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         delete inner_handle;
         return ret;
     }
@@ -126,7 +127,7 @@ int kv_set_start(kv_set_handle_t *handle, const char *key, size_t final_data_siz
 int kv_set_add_data(kv_set_handle_t handle, const void *value_data, size_t data_size)
 {
     if (!handle->handle_is_open) {
-       return KVSTORE_BAD_VALUE;
+       return MBED_ERROR_INVALID_ARGUMENT;
     }
 
     return handle->kvstore_intance->set_add_data(*handle->set_handle, value_data, data_size);
@@ -135,7 +136,7 @@ int kv_set_add_data(kv_set_handle_t handle, const void *value_data, size_t data_
 int kv_set_finalize(kv_set_handle_t handle)
 {
     if (!handle->handle_is_open) {
-        return KVSTORE_BAD_VALUE;
+        return MBED_ERROR_INVALID_ARGUMENT;
     }
 
     int ret = handle->kvstore_intance->set_finalize(*handle->set_handle);
@@ -149,13 +150,13 @@ int kv_set_finalize(kv_set_handle_t handle)
 int kv_iterator_open(kv_iterator_t *it, const char *full_prefix)
 {
     int ret = storage_configuration();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
     (*it) = new _opaque_kv_key_iterator;
     if (*it == NULL) {
-        return KVSTORE_OS_ERROR;
+        return MBED_ERROR_FAILED_OPERATION;
     }
 
     KVStore *kv_instance = NULL;
@@ -165,7 +166,7 @@ int kv_iterator_open(kv_iterator_t *it, const char *full_prefix)
 
     KVStore::iterator_t *inner_it = new KVStore::iterator_t;
     ret = kv_instance->iterator_open(inner_it, key);
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         delete inner_it;
         return ret;
     }
@@ -179,7 +180,7 @@ int kv_iterator_open(kv_iterator_t *it, const char *full_prefix)
 int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size)
 {
     if (!it->iterator_is_open) {
-        return KVSTORE_BAD_VALUE;
+        return MBED_ERROR_INVALID_ARGUMENT;
     }
 
     return it->kvstore_intance->iterator_next(*it->iterator_handle, key, key_size);
@@ -188,7 +189,7 @@ int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size)
 int kv_iterator_close(kv_iterator_t it)
 {
     if (!it->iterator_is_open) {
-        return KVSTORE_BAD_VALUE;
+        return MBED_ERROR_INVALID_ARGUMENT;
     }
 
     int ret = it->kvstore_intance->iterator_close(*it->iterator_handle);
@@ -202,7 +203,7 @@ int kv_iterator_close(kv_iterator_t it)
 int kv_reset(const char * kvstore_name)
 {
     int ret = storage_configuration();
-    if (KVSTORE_SUCCESS != ret) {
+    if (MBED_SUCCESS != ret) {
         return ret;
     }
 
