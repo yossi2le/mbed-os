@@ -125,7 +125,7 @@ void test_file_system_store_functionality_unit_test()
     TEST_ASSERT_EQUAL(0, err);
 
     err = fsst->set(kv_key5, kv_value3, 10, 0x8);
-    TEST_ASSERT_EQUAL(KVSTORE_WRITE_ONCE_ERROR, err);
+    TEST_ASSERT_EQUAL(MBED_ERROR_WRITE_PROTECTED, err);
 
     /* Verify value remains of first set */
     memset(kv_buf, 0, 64);
@@ -135,13 +135,13 @@ void test_file_system_store_functionality_unit_test()
 
     /* Non existing File get fails */
     err = fsst->get("key4", kv_buf, 64, &actual_size, 0);
-    TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
+    TEST_ASSERT_EQUAL(MBED_ERROR_ITEM_NOT_FOUND, err);
 
     KVStore::iterator_t kv_it;
     err = fsst->iterator_open(&kv_it, NULL);
     TEST_ASSERT_EQUAL(0, err);
     i_ind = 0;
-    while (fsst->iterator_next(kv_it, kv_name, 16) != KVSTORE_NOT_FOUND) {
+    while (fsst->iterator_next(kv_it, kv_name, 16) != MBED_ERROR_ITEM_NOT_FOUND) {
         i_ind++;
     }
     TEST_ASSERT_EQUAL(i_ind, 4); /* 4 Files : key1, key2, kei3, key5 */
@@ -150,7 +150,7 @@ void test_file_system_store_functionality_unit_test()
 
     /* Remove Write Once key5 - should fail */
     err = fsst->remove(kv_key5);
-    TEST_ASSERT_EQUAL(KVSTORE_WRITE_ONCE_ERROR, err);
+    TEST_ASSERT_EQUAL(MBED_ERROR_WRITE_PROTECTED, err);
 
     /* Verify key5 still remains and has the same value */
     memset(kv_buf, 0, 64);
@@ -161,7 +161,7 @@ void test_file_system_store_functionality_unit_test()
     fsst->iterator_open(&kv_it, "key");
     TEST_ASSERT_EQUAL(0, err);
     i_ind = 0;
-    while (fsst->iterator_next(kv_it, kv_name, 16) != KVSTORE_NOT_FOUND) {
+    while (fsst->iterator_next(kv_it, kv_name, 16) != MBED_ERROR_ITEM_NOT_FOUND) {
         i_ind++;
         TEST_ASSERT_EQUAL(0, strncmp(kv_name, "key", strlen("key")));
     }
@@ -173,24 +173,24 @@ void test_file_system_store_functionality_unit_test()
     err = fsst->remove(kv_key3);
     TEST_ASSERT_EQUAL(0, err);
     err = fsst->remove(kv_key3);
-    TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
+    TEST_ASSERT_EQUAL(MBED_ERROR_ITEM_NOT_FOUND, err);
 
     /* Verify after removing kei3 that get value/info fail */
     err = fsst->get(kv_key3, kv_buf, 64, &actual_size, 0);
-    TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
+    TEST_ASSERT_EQUAL(MBED_ERROR_ITEM_NOT_FOUND, err);
     err = fsst->get_info(kv_key3, &kv_info);
-    TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
+    TEST_ASSERT_EQUAL(MBED_ERROR_ITEM_NOT_FOUND, err);
 
     /* Reset - Verify key2 exists before reset, and not found after reset  */
     err = fsst->get(kv_key2, kv_buf, 64, &actual_size, 0);
     TEST_ASSERT_EQUAL(0, err);
     err = fsst->reset();
     err = fsst->get(kv_key2, kv_buf, 64, &actual_size, 0);
-    TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
+    TEST_ASSERT_EQUAL(MBED_ERROR_ITEM_NOT_FOUND, err);
 
     /* Verify that even Write-Once key5 is not found after reset */
     err = fsst->get(kv_key5, kv_buf, 64, &actual_size, 0);
-    TEST_ASSERT_EQUAL(KVSTORE_NOT_FOUND, err);
+    TEST_ASSERT_EQUAL(MBED_ERROR_ITEM_NOT_FOUND, err);
 
     /* Verify that key5 Write-Once can be set again after Reset*/
     err = fsst->set(kv_key5, kv_value5, 10, 0x1);
@@ -491,6 +491,7 @@ int main()
 {
     mbed_trace_init();
     utest_printf("MAIN STARTS\n");
+    printf("RAND_MAX : %d\n", RAND_MAX);
     return !Harness::run(specification);
 }
 
