@@ -16,6 +16,10 @@
 #ifndef _KV_CONFIG
 #define _KV_CONFIG
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #if MBED_CONF_STORAGE_STORAGE_TYPE == FILESYSTEM
 #define FSST_FOLDER_PATH MBED_CONF_STORAGE_FILESYSTEM_FOLDER_PATH
 #elif MBED_CONF_STORAGE_STORAGE_TYPE == FILESYSTEM_NO_RBP
@@ -116,4 +120,7 @@ int _storage_config_FILESYSTEM_NO_RBP();
  */
 int storage_configuration();
 
+#ifdef __cplusplus
+} // closing brace for extern "C"
+#endif
 #endif

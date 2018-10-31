@@ -6,7 +6,7 @@
             "value": "8192"
         },
         "internal_base_address": {
-            "help": "If not defined the default is the first sector after the application code ends.",
+            "help": "If default base address is the first sector after the application code ends.",
             "value": "0"
         }
     }

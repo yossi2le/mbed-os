@@ -2,7 +2,7 @@
     "name": "storage_filesystem",
     "config": {
         "rbp_internal_size": {
-            "help": "If not defined default size is 4K*#enteries/32",
+            "help": "If default the size will be 4K*#entries/32",
             "value": "0"
         },
         "rbp_number_of_entries": {
@@ -10,27 +10,27 @@
             "value": "64"
         },
         "internal_base_address": {
-            "help": "If not defined the default is the first sector after the application code ends.",
+            "help": "If default base address is the first sector after the application code ends.",
             "value": "0"
         },
         "filesystem": {
-            "help": "Options are default, FAT or LITTLE. If not specified default filesystem will be used",
+            "help": "Options are default, FAT or LITTLE. If default value the filesystem is choosen by the blockdevice type",
             "value": "default"
         },
         "blockdevice": {
-            "help": "Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If not set the default block device will be used",
+            "help": "Options are default, SPIF, DATAFASH, QSPIF or FILESYSTEM. If default the block device will be choosen by the defined component",
             "value": "default"
         },
         "external_size": {
-            "help": "Size in bytes of the external block device, if not specified the maximum is the default.",
+            "help": "Size in bytes of the external block device, if default the maximum sze avalable is used.",
             "value": "0"
         },
         "external_base_address": {
-            "help": "If not defined the default is from address 0",
+            "help": "The default is from address 0",
             "value": "0"
         },    
         "mount_point": {
-            "help": "Where to mount the filesystem. Ignored if the default file system is applied.",
+            "help": "Where to mount the filesystem.",
             "value": "kv"
         },
         "folder_path": {

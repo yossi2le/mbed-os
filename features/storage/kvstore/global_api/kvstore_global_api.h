@@ -19,15 +19,17 @@
 #include "stddef.h"
 #include "stdint.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 typedef struct _opaque_kv_key_iterator *kv_iterator_t;
 typedef struct _opaque_kv_set_handle *kv_set_handle_t;
 
-enum kv_create_flags {
-    KV_WRITE_ONCE_FLAG       = (1 << 0),
-    KV_ENCRYPT_FLAG          = (1 << 1),
-    KV_AUTHENTICATE_FLAG     = (1 << 2),
-    KV_ROLLBACK_PROTECT_FLAG = (1 << 3),
-};
+#define KV_WRITE_ONCE_FLAG        (1 << 0)
+#define KV_ENCRYPT_FLAG           (1 << 1)
+#define KV_AUTHENTICATE_FLAG      (1 << 2)
+#define KV_ROLLBACK_PROTECT_FLAG  (1 << 3)
 
 static const uint32_t KV_MAX_KEY_LENGTH = 128;
 
@@ -147,4 +149,7 @@ int kv_iterator_close(kv_iterator_t it);
 //Currently for test only. please dont use it cause it might be removed before release
 int kv_reset(const char * kvstore_path);
 
+#ifdef __cplusplus
+} // closing brace for extern "C"
+#endif
 #endif
