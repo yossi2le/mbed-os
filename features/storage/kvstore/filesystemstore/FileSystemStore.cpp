@@ -147,7 +147,7 @@ int FileSystemStore::set(const char *key, const void *buffer, size_t size, uint3
         goto exit_point;
     }
 
-    if ((key == NULL) || (size > KVStore::MAX_KEY_SIZE) || ((buffer == NULL) && (size > 0)) ) {
+    if ((!is_valid_key(key)) || (size > KVStore::MAX_KEY_SIZE) || ((buffer == NULL) && (size > 0)) ) {
         status = MBED_ERROR_INVALID_SIZE;
         goto exit_point;
     }
@@ -317,7 +317,7 @@ int FileSystemStore::set_start(set_handle_t *handle, const char *key, size_t fin
     // Only a single key file can be incrementaly editted at a time
     _mutex.lock();
 
-    if ((key == NULL) || (handle == NULL) ) {
+    if ((!is_valid_key(key)) || (handle == NULL) ) {
         status = MBED_ERROR_INVALID_ARGUMENT;
         goto exit_point;
     }
@@ -567,7 +567,7 @@ int FileSystemStore::_verify_key_file(const char *key, key_metadata_t *key_metad
 {
     int status = MBED_SUCCESS;
 
-    if (key == NULL) {
+    if (!is_valid_key(key)) {
         status = MBED_ERROR_INVALID_ARGUMENT;
         goto exit_point;
     }
