@@ -25,6 +25,7 @@
 #include <stdio.h>
 #include <algorithm>
 #include "mbed_error.h"
+#include "KVMap.h"
 
 using namespace utest::v1;
 
@@ -49,7 +50,12 @@ static void kv_global_api_test()
     size_t actual_data_size;
     int result;
     kv_info_t info;
+
     kv_reset("kv/");
+
+    mbed::KVMap& kv_map = mbed::KVMap::get_instance();
+    mbed::KVStore * ptr_kv = kv_map.get_internal_kv_instance("/kv/");
+    printf("************ internal kvstore %x ************\n", ptr_kv);
 
     result = kv_set(key1, key1_val1, strlen(key1_val1), 0);
     TEST_ASSERT_EQUAL(MBED_SUCCESS, result);

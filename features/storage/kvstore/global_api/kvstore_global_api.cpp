@@ -16,7 +16,7 @@
 #include "kvstore_global_api.h"
 
 #include "kv_config.h"
-#include "kv_map.h"
+#include "KVMap.h"
 #include "KVStore.h"
 #include "mbed_error.h"
 
@@ -36,9 +36,10 @@ int kv_set(const char *full_name_key, const void *buffer, size_t size, uint32_t 
         return ret;
     }
 
+    KVMap& kv_map = KVMap::get_instance();
     KVStore *kv_instance = NULL;
     size_t key_index = 0;
-    ret = kv_lookup(full_name_key, &kv_instance, &key_index);
+    ret = kv_map.lookup(full_name_key, &kv_instance, &key_index);
     if (ret != MBED_SUCCESS) {
         return ret;
     }
@@ -54,9 +55,10 @@ int kv_get(const char *full_name_key, void *buffer, size_t buffer_size, size_t *
         return ret;
     }
 
+    KVMap& kv_map = KVMap::get_instance();
     KVStore *kv_instance = NULL;
     size_t key_index = 0;
-    ret = kv_lookup(full_name_key, &kv_instance, &key_index);
+    ret = kv_map.lookup(full_name_key, &kv_instance, &key_index);
     if (ret != MBED_SUCCESS) {
         return ret;
     }
@@ -71,9 +73,10 @@ int kv_get_info(const char *full_name_key, kv_info_t *info)
         return ret;
     }
 
+    KVMap& kv_map = KVMap::get_instance();
     KVStore *kv_instance = NULL;
     size_t key_index = 0;
-    ret = kv_lookup(full_name_key, &kv_instance, &key_index);
+    ret = kv_map.lookup(full_name_key, &kv_instance, &key_index);
     if (ret != MBED_SUCCESS) {
         return ret;
     }
@@ -95,9 +98,10 @@ int kv_remove(const char *full_name_key)
         return ret;
     }
 
+    KVMap& kv_map = KVMap::get_instance();
     KVStore *kv_instance = NULL;
     size_t key_index = 0;
-    ret  = kv_lookup(full_name_key, &kv_instance, &key_index);
+    ret  = kv_map.lookup(full_name_key, &kv_instance, &key_index);
     if (ret != MBED_SUCCESS) {
         return ret;
     }
@@ -107,6 +111,10 @@ int kv_remove(const char *full_name_key)
 
 int kv_iterator_open(kv_iterator_t *it, const char *full_prefix)
 {
+    if (it == NULL || full_prefix == NULL) {
+        return MBED_ERROR_INVALID_ARGUMENT;
+    }
+
     int ret = storage_configuration();
     if (MBED_SUCCESS != ret) {
         return ret;
@@ -118,10 +126,12 @@ int kv_iterator_open(kv_iterator_t *it, const char *full_prefix)
     }
     (*it)->iterator_is_open = false;
 
+    KVMap& kv_map = KVMap::get_instance();
     KVStore *kv_instance = NULL;
     size_t key_index = 0;
-    ret  = kv_lookup(full_prefix, &kv_instance, &key_index);
+    ret  = kv_map.lookup(full_prefix, &kv_instance, &key_index);
     if (ret != MBED_SUCCESS) {
+        delete (*it);
         return ret;
     }
 
@@ -171,13 +181,17 @@ int kv_reset(const char *kvstore_name)
         return ret;
     }
 
+    KVMap& kv_map = KVMap::get_instance();
     KVStore *kv_instance = NULL;
     size_t key_index = 0;
-    ret  = kv_lookup(kvstore_name, &kv_instance, &key_index);
+    ret  = kv_map.lookup(kvstore_name, &kv_instance, &key_index);
     if (ret != MBED_SUCCESS) {
         return ret;
     }
 
-    return kv_instance->reset();
+    ret = kv_instance->reset();
+
+    return ret;
+
 }
 

@@ -10,7 +10,7 @@
             "value": "64"
         },
         "internal_base_address": {
-            "help": "If default base address is the first sector after the application code ends.",
+            "help": "If default, base address is the first sector after the application code",
             "value": "0"
         },
         "filesystem": {
@@ -18,7 +18,7 @@
             "value": "default"
         },
         "blockdevice": {
-            "help": "Options are default, SPIF, DATAFASH, QSPIF or SD. If default the block device will be chosen by the defined component",
+            "help": "Options are default, SPIF, DATAFASH, QSPIF or SD. If default, the block device will be chosen according to the component defined in targets.json",
             "value": "default"
         },
         "external_size": {
@@ -34,7 +34,7 @@
             "value": "kv"
         },
         "folder_path": {
-            "help": "Path for the working directory where the FileSyetemStore stores the data",
+            "help": "Path for the working directory where the FileSystemStore stores the data",
             "value": "kvstore"
         }
     }

@@ -40,7 +40,7 @@ typedef struct info {
 /**
  * @brief Set one KVStore item, given key and value.
  *
- * @param[in]  full_name_key        Partition_path/Key.
+ * @param[in]  full_name_key        /Partition_path/Key.
  * @param[in]  buffer               Value data buffer.
  * @param[in]  size                 Value data size.
  * @param[in]  create_flags         Flag mask.
@@ -52,7 +52,7 @@ int kv_set(const char *full_name_key, const void *buffer, size_t size, uint32_t 
 /**
  * @brief Get one KVStore item, given key.
  *
- * @param[in]  full_name_key        Partition_path/Key.
+ * @param[in]  full_name_key        /Partition_path/Key.
  * @param[in]  buffer               Value data buffer.
  * @param[in]  buffer_size          Value data buffer size.
  * @param[out] actual_size          Actual read size.
@@ -64,7 +64,7 @@ int kv_get(const char *full_name_key, void *buffer, size_t buffer_size, size_t *
 /**
  * @brief Get information of a given key.
  *
- * @param[in]  full_name_key        Partition_path/Key.
+ * @param[in]  full_name_key        /Partition_path/Key.
  * @param[out] info                 Returned information structure.
  *
  * @returns 0 on success or a negative error code on failure
@@ -81,19 +81,22 @@ int kv_get_info(const char *full_name_key, kv_info_t *info);
 int kv_remove(const char *full_name_key);
 
 /**
- * @brief Start an iteration over KVStore keys.
+ * @brief Start an iteration over KVStore keys to find all the entries
+ *        that fit the full_prefix
  *
  * @param[out] it                   Allocating iterator handle.
  *                                  Do not forget to call kv_iterator_close
  *                                  to deallocate the memory.
- * @param[in]  full_prefix          Pratition/Key prefix.
+ * @param[in]  full_prefix          full_prefix Partition/Key prefix. If
+ *                                  empty key or NULL pointer, all keys
+ *                                  will match.
  *
  * @returns 0 on success or a negative error code on failure
  */
 int kv_iterator_open(kv_iterator_t *it, const char *full_prefix = NULL);
 
 /**
- * @brief Get next key in iteration.
+ * @brief Get next key in iteration that matches the prefix.
  *
  * @param[in]  it                   Iterator handle.
  * @param[in]  key                  Buffer for returned key.
@@ -104,7 +107,7 @@ int kv_iterator_open(kv_iterator_t *it, const char *full_prefix = NULL);
 int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size);
 
 /**
- * @brief Close iteration and deallocating the iterator handle.
+ * @brief Close iteration and de-allocate the iterator handle.
  *
  * @param[in]  it                   Iterator handle.
  *
@@ -112,8 +115,13 @@ int kv_iterator_next(kv_iterator_t it, char *key, size_t key_size);
  */
 int kv_iterator_close(kv_iterator_t it);
 
-//Helper function
-//Currently for test only. please dont use it cause it might be removed before release
+/**
+ * @brief Remove all keys and related data
+ *
+ * @param[in]  kvstore_path        /Pratition/
+ *
+ * @returns 0 on success or a negative error code on failure
+ */
 int kv_reset(const char *kvstore_path);
 
 #ifdef __cplusplus
