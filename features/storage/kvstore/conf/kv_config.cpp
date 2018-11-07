@@ -158,6 +158,25 @@ static inline uint32_t align_down(uint64_t val, uint64_t size)
     return (((val) / size)) * size;
 }
 
+int _calculate_blocksize_match_TDBStore(BlockDevice *bd)
+{
+    bd_size_t size = bd->size();
+    bd_size_t erase_size = bd->get_erase_size();
+    bd_size_t number_of_sector = size / erase_size;
+
+    if (number_of_sector < 2){
+        tr_warning("KV Config: there is less then 2 sector TDBStore will not work.");
+        return -1;
+    }
+
+
+    if (number_of_sector % 2 != 0){
+        tr_warning("KV Config: Number of sector is not even number. Consider changing the BlockDevice size");
+    }
+
+    return MBED_SUCCESS;
+}
+
 int _get_addresses(BlockDevice *bd, bd_addr_t start_address, bd_size_t size, bd_addr_t *out_start_addr,
                    bd_addr_t *out_end_addr )
 {
@@ -535,6 +554,11 @@ int _storage_config_TDB_INTERNAL()
         return MBED_ERROR_FAILED_OPERATION;
     }
 
+    if (_calculate_blocksize_match_TDBStore(kvstore_config.internal_bd) != MBED_SUCCESS) {
+        tr_error("KV Config: Can not create TDBStore with less then 2 sector.");
+        return MBED_ERROR_INVALID_ARGUMENT;
+    }
+
     static TDBStore tdb_internal(kvstore_config.internal_bd);
     kvstore_config.internal_store = &tdb_internal;
 
@@ -584,6 +608,11 @@ int _storage_config_TDB_EXTERNAL()
         return MBED_ERROR_FAILED_OPERATION ;
     }
 
+    if (_calculate_blocksize_match_TDBStore(kvstore_config.internal_bd) != MBED_SUCCESS) {
+        tr_error("KV Config: Can not create TDBStore with less then 2 sector.");
+        return MBED_ERROR_INVALID_ARGUMENT;
+    }
+
     static TDBStore tdb_internal(kvstore_config.internal_bd);
     kvstore_config.internal_store = &tdb_internal;
 
@@ -607,7 +636,14 @@ int _storage_config_TDB_EXTERNAL_NO_RBP()
         return MBED_ERROR_FAILED_OPERATION ;
     }
 
-    if ( strcmp(STR(MBED_CONF_STORAGE_TDB_EXTERNAL_NO_RBP_BLOCKDEVICE), "SD") == 0 ) {
+#if defined(COMPONENT_SD)
+    if ( strcmp(STR(MBED_CONF_STORAGE_TDB_EXTERNAL_NO_RBP_BLOCKDEVICE), "SD") == 0
+#if defined(COMPONENT_SD) &&  !defined(COMPONENT_SPIF) && !defined(COMPONENT_QSPIF) && !defined(COMPONENT_DATAFLASH)
+            ||  strcmp(STR(MBED_CONF_STORAGE_TDB_EXTERNAL_NO_RBP_BLOCKDEVICE), "default") == 0) {
+#else
+        ) {
+
+#endif
         //TDBStore need FlashSimBlockDevice when working with SD block device
         if (bd->init() != MBED_SUCCESS) {
             tr_error("KV Config: Fail to init external BlockDevice.");
@@ -619,11 +655,19 @@ int _storage_config_TDB_EXTERNAL_NO_RBP()
     } else {
         kvstore_config.external_bd = bd;
     }
+#else
+    kvstore_config.external_bd = bd;
+#endif
 
     int ret = kvstore_config.external_bd->init();
     if (ret != MBED_SUCCESS) {
         tr_error("KV Config: Fail to init external BlockDevice.");
         return MBED_ERROR_FAILED_OPERATION ;
+    }
+
+    if (_calculate_blocksize_match_TDBStore(kvstore_config.external_bd) != MBED_SUCCESS) {
+        tr_error("KV Config: Can not create TDBStore with less then 2 sector.");
+        return MBED_ERROR_INVALID_ARGUMENT;
     }
 
     static TDBStore tdb_external(kvstore_config.external_bd);

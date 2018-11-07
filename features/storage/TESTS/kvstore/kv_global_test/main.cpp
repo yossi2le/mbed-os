@@ -54,8 +54,20 @@ static void kv_global_api_test()
     kv_reset("kv/");
 
     mbed::KVMap& kv_map = mbed::KVMap::get_instance();
-    mbed::KVStore * ptr_kv = kv_map.get_internal_kv_instance("/kv/");
-    printf("************ internal kvstore %x ************\n", ptr_kv);
+    mbed::KVStore * ptr_kv = kv_map.get_main_kv_instance("/kv/");
+    printf("************ main kvstore %p ************\n", ptr_kv);
+
+    ptr_kv = kv_map.get_internal_kv_instance("/kv/");
+    printf("************ internal kvstore %p ************\n", ptr_kv);
+    BlockDevice * ptr_bd = kv_map.get_internal_blockdevice_instance("/kv/");
+    printf("************ internal BlockDevice %p ************\n", ptr_bd);
+
+    ptr_kv = kv_map.get_external_kv_instance("/kv/");
+    printf("************ external kvstore %p ************\n", ptr_kv);
+    mbed::FileSystem * ptr_fs = kv_map.get_external_filesystem_instance("/kv/");
+    printf("************ external FileSystem %p ************\n", ptr_fs);
+    ptr_bd = kv_map.get_external_blockdevice_instance("/kv/");
+    printf("************ external BlockDevice %p ************\n", ptr_bd);
 
     result = kv_set(key1, key1_val1, strlen(key1_val1), 0);
     TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
@@ -147,33 +159,38 @@ static void kv_global_api_test()
         result = kv_iterator_next(it, char_get_buf, sizeof(get_buf));
         TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
 
-        char * str_dup = strdup(key4);
+
+        char * str_dup = new char[strlen(key4)+1];
+        memcpy(str_dup,key4, strlen(key4)+1);
         char *token = strtok(str_dup, "/" );
         token = strtok(NULL, "/" );
         bool got_key4 = !strcmp(token, char_get_buf);
-        free(str_dup);
-        str_dup = strdup(key5);
+        delete [] str_dup;
+        str_dup = new char[strlen(key5)+1];
+        memcpy(str_dup,key5, strlen(key5)+1);
         token = strtok(str_dup, "/" );
         token = strtok(NULL, "/" );
         bool got_key5 = !strcmp(token, char_get_buf);
-        free(str_dup);
+        delete [] str_dup;
 
         TEST_ASSERT_EQUAL(true, got_key4 || got_key5);
 
         result = kv_iterator_next(it, char_get_buf, sizeof(get_buf));
         TEST_ASSERT_EQUAL(MBED_SUCCESS, result);
         if (got_key4) {
-            str_dup = strdup(key5);
+            str_dup = new char[strlen(key5)+1];
+            memcpy(str_dup,key5, strlen(key5)+1);
             token = strtok(str_dup, "/" );
             token = strtok(NULL, "/" );
             TEST_ASSERT_EQUAL_STRING(token, char_get_buf);
-            free(str_dup);
+            delete [] str_dup;
         } else {
-            str_dup = strdup(key4);
+            str_dup = new char[strlen(key4)+1];
+            memcpy(str_dup,key4, strlen(key4)+1);
             token = strtok(str_dup, "/" );
             token = strtok(NULL, "/" );
             TEST_ASSERT_EQUAL_STRING(token, char_get_buf);
-            free(str_dup);
+            delete [] str_dup;
         }
 
         result = kv_iterator_next(it, (char *)get_buf, sizeof(get_buf));

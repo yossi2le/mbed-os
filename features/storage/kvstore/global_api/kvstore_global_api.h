@@ -93,7 +93,7 @@ int kv_remove(const char *full_name_key);
  *
  * @returns 0 on success or a negative error code on failure
  */
-int kv_iterator_open(kv_iterator_t *it, const char *full_prefix = NULL);
+int kv_iterator_open(kv_iterator_t *it, const char *full_prefix);
 
 /**
  * @brief Get next key in iteration that matches the prefix.

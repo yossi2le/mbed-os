@@ -135,7 +135,6 @@ int kv_iterator_open(kv_iterator_t *it, const char *full_prefix)
         return ret;
     }
 
-
     (*it)->kvstore_intance = kv_instance;
     KVStore::iterator_t *inner_it = new KVStore::iterator_t;
     ret = kv_instance->iterator_open(inner_it, full_prefix + key_index);

@@ -104,8 +104,60 @@ public:
      */
     int lookup(const char *full_name, mbed::KVStore **kv_instance, size_t *key_index);
 
+    /**
+     * @brief full name lookup and then break it into KVStore instance and key
+     *
+     * @param name string parameter contains the /partition name/.
+     *
+     * @return pointer to the internal kvstore on success,
+     *         NULL on failure or if not exist
+     */
     KVStore * get_internal_kv_instance(const char *name);
-
+    /**
+     * @brief full name lookup and then break it into KVStore instance and key
+     *
+     * @param name string parameter contains the /partition name/.
+     *
+     * @return pointer to the external kvstore on success,
+     *         NULL on failure or if not exist
+     */
+    KVStore * get_external_kv_instance(const char *name);
+    /**
+     * @brief full name lookup and then break it into KVStore instance and key
+     *
+     * @param name string parameter contains the /partition name/.
+     *
+     * @return pointer to the main kvstore on success,
+     *         NULL on failure or if not exist
+     */
+    KVStore * get_main_kv_instance(const char *name);
+    /**
+     * @brief full name lookup and then break it into KVStore instance and key
+     *
+     * @param name string parameter contains the /partition name/.
+     *
+     * @return pointer to the internal BlockDevice on success,
+     *         NULL on failure or if not exist
+     */
+    BlockDevice * get_internal_blockdevice_instance(const char *name);
+    /**
+     * @brief full name lookup and then break it into KVStore instance and key
+     *
+     * @param name string parameter contains the /partition name/.
+     *
+     * @return pointer to the external BlockDevice on success,
+     *         NULL on failure or if not exist
+     */
+    BlockDevice * get_external_blockdevice_instance(const char *name);
+    /**
+     * @brief full name lookup and then break it into KVStore instance and key or if not exist
+     *
+     * @param name string parameter contains the /partition name/.
+     *
+     * @return pointer to the external FileSystem on success,
+     *         NULL on failure or if not exist
+     */
+    FileSystem * get_external_filesystem_instance(const char *name);
 private:
 
     /**

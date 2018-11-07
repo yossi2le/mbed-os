@@ -197,7 +197,7 @@ int KVMap::config_lookup(const char *full_name, kvstore_config_t **kv_config, si
     int ret = MBED_SUCCESS;
     int delimiter_index;
     int i;
-    char * delimiter_position;
+    const char * delimiter_position;
 
     const char *temp_str = full_name;
 
@@ -256,6 +256,96 @@ exit:
     _mutex->unlock();
 
      return ret != MBED_SUCCESS ? NULL : kv_config->internal_store;
+}
+
+KVStore * KVMap::get_external_kv_instance(const char *name)
+{
+
+    _mutex->lock();
+
+    kvstore_config_t * kv_config;
+    size_t key_index = 0;
+
+    int ret = config_lookup(name, &kv_config, &key_index);
+    if (ret != MBED_SUCCESS) {
+        goto exit;
+    }
+exit:
+    _mutex->unlock();
+
+     return ret != MBED_SUCCESS ? NULL : kv_config->external_store;
+}
+
+KVStore * KVMap::get_main_kv_instance(const char *name)
+{
+
+    _mutex->lock();
+
+    kvstore_config_t * kv_config;
+    size_t key_index = 0;
+
+    int ret = config_lookup(name, &kv_config, &key_index);
+    if (ret != MBED_SUCCESS) {
+        goto exit;
+    }
+exit:
+    _mutex->unlock();
+
+     return ret != MBED_SUCCESS ? NULL : kv_config->kvstore_main_instance;
+}
+
+BlockDevice * KVMap::get_internal_blockdevice_instance(const char *name)
+{
+
+    _mutex->lock();
+
+    kvstore_config_t * kv_config;
+    size_t key_index = 0;
+
+    int ret = config_lookup(name, &kv_config, &key_index);
+    if (ret != MBED_SUCCESS) {
+        goto exit;
+    }
+exit:
+    _mutex->unlock();
+
+     return ret != MBED_SUCCESS ? NULL : kv_config->internal_bd;
+}
+
+BlockDevice * KVMap::get_external_blockdevice_instance(const char *name)
+{
+
+    _mutex->lock();
+
+    kvstore_config_t * kv_config;
+    size_t key_index = 0;
+
+    int ret = config_lookup(name, &kv_config, &key_index);
+    if (ret != MBED_SUCCESS) {
+        goto exit;
+    }
+exit:
+    _mutex->unlock();
+
+     return ret != MBED_SUCCESS ? NULL : kv_config->external_bd;
+}
+
+FileSystem * KVMap::get_external_filesystem_instance(const char *name)
+{
+
+    _mutex->lock();
+
+    kvstore_config_t * kv_config;
+    size_t key_index = 0;
+
+    int ret = config_lookup(name, &kv_config, &key_index);
+    if (ret != MBED_SUCCESS) {
+        goto exit;
+    }
+exit:
+    _mutex->unlock();
+
+     return ret != MBED_SUCCESS ? NULL : kv_config->external_fs;
 }
 
 }
