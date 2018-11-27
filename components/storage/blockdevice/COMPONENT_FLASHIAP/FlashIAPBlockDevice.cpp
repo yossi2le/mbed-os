@@ -36,6 +36,8 @@ using namespace mbed;
 #define DEBUG_PRINTF(...)
 #endif
 
+const char * FlashIAPBlockDevice::_type = "FLASHIAP";
+
 FlashIAPBlockDevice::FlashIAPBlockDevice(uint32_t address, uint32_t size)
     : _flash(), _base(address), _size(size), _is_initialized(false), _init_ref_count(0)
 {
@@ -246,6 +248,11 @@ bd_size_t FlashIAPBlockDevice::size() const
     DEBUG_PRINTF("size: %" PRIX64 "\r\n", _size);
 
     return _size;
+}
+
+const char * FlashIAPBlockDevice::get_type()
+{
+    return _type;
 }
 
 #endif /* DEVICE_FLASH */

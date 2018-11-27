@@ -93,6 +93,7 @@ enum spif_default_instructions {
 // Mutex is used for some SPI Driver commands that must be done sequentially with no other commands in between
 // e.g. (1)Set Write Enable, (2)Program, (3)Wait Memory Ready
 SingletonPtr<PlatformMutex> SPIFBlockDevice::_mutex;
+const char * SPIFBlockDevice::_type = "SPIF";
 
 // Local Function
 static unsigned int local_math_power(int base, int exp);
@@ -470,6 +471,11 @@ bd_size_t SPIFBlockDevice::size() const
 int SPIFBlockDevice::get_erase_value() const
 {
     return 0xFF;
+}
+
+const char * SPIFBlockDevice::get_type()
+{
+    return _type;
 }
 
 /***************************************************/

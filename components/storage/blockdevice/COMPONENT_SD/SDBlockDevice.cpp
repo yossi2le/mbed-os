@@ -248,6 +248,7 @@ using namespace mbed;
 
 // Only HC block size is supported. Making this a static constant reduces code size.
 const uint32_t SDBlockDevice::_block_size = BLOCK_SIZE_HC;
+const char * SDBlockDevice::_type = "SD";
 
 #if MBED_CONF_SD_CRC_ENABLED
 SDBlockDevice::SDBlockDevice(PinName mosi, PinName miso, PinName sclk, PinName cs, uint64_t hz, bool crc_on)
@@ -630,6 +631,11 @@ bd_size_t SDBlockDevice::get_program_size() const
 bd_size_t SDBlockDevice::size() const
 {
     return _block_size * _sectors;
+}
+
+const char * SDBlockDevice::get_type()
+{
+    return _type;
 }
 
 void SDBlockDevice::debug(bool dbg)

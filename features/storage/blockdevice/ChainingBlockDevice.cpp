@@ -20,6 +20,8 @@
 
 namespace mbed {
 
+const char * ChainingBlockDevice::_type = "CHAINING";
+
 ChainingBlockDevice::ChainingBlockDevice(BlockDevice **bds, size_t bd_count)
     : _bds(bds), _bd_count(bd_count)
     , _read_size(0), _program_size(0), _erase_size(0), _size(0)
@@ -281,6 +283,11 @@ int ChainingBlockDevice::get_erase_value() const
 bd_size_t ChainingBlockDevice::size() const
 {
     return _size;
+}
+
+const char * ChainingBlockDevice::get_type()
+{
+    return _type;
 }
 
 } // namespace mbed

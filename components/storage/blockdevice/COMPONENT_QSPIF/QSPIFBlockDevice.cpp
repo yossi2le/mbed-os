@@ -97,6 +97,8 @@ enum qspif_default_instructions {
     QSPIF_RDID = 0x9f, // Read Manufacturer and JDEC Device ID
 };
 
+const char * QSPIFBlockDevice::_type = "QSPIF";
+
 // Local Function
 static int local_math_power(int base, int exp);
 
@@ -475,6 +477,11 @@ bd_size_t QSPIFBlockDevice::get_erase_size() const
 {
     // return minimal erase size supported by all regions (0 if none exists)
     return _min_common_erase_size;
+}
+
+const char * QSPIFBlockDevice::get_type()
+{
+    return _type;
 }
 
 // Find minimal erase size supported by the region to which the address belongs to

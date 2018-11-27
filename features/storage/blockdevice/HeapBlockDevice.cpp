@@ -21,6 +21,8 @@
 
 namespace mbed {
 
+const char * HeapBlockDevice::_type = "HEAP";
+
 HeapBlockDevice::HeapBlockDevice(bd_size_t size, bd_size_t block)
     : _read_size(block), _program_size(block), _erase_size(block)
     , _count(size / block), _blocks(0), _init_ref_count(0), _is_initialized(false)
@@ -183,4 +185,10 @@ int HeapBlockDevice::erase(bd_addr_t addr, bd_size_t size)
     return 0;
 }
 
+const char * HeapBlockDevice::get_type()
+{
+    return _type;
+}
+
 } // namespace mbed
+

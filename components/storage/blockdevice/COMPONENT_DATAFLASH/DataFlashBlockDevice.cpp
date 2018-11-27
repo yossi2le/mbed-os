@@ -51,6 +51,8 @@ using namespace mbed;
 
 void _print_status(uint16_t status);
 
+const char * DataFlashBlockDevice::_type = "DATAFLASH";
+
 /* non-exhaustive opcode list */
 enum opcode {
     DATAFLASH_OP_NOP                       = 0x00,
@@ -525,6 +527,11 @@ bd_size_t DataFlashBlockDevice::size() const
     bd_size_t device_size = _device_size;
     _mutex.unlock();
     return device_size;
+}
+
+const char * DataFlashBlockDevice::get_type()
+{
+    return _type;
 }
 
 /**

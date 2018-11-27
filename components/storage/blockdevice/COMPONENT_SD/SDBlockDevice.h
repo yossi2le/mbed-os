@@ -116,6 +116,11 @@ public:
      */
     virtual int frequency(uint64_t freq);
 
+    /** Get the BlockDevice class type.
+     *
+     *  @return         A string represent the BlockDevice class type.
+     */
+    virtual const char * get_type();
 
 private:
     /* Commands : Listed below are commands supported
@@ -219,6 +224,7 @@ private:
     bool _is_initialized;
     bool _dbg;
     uint32_t _init_ref_count;
+    static const char *_type;
 
 #if MBED_CONF_SD_CRC_ENABLED
     bool _crc_on;

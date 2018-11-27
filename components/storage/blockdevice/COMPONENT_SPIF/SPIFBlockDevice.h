@@ -189,6 +189,12 @@ public:
      */
     virtual mbed::bd_size_t size() const;
 
+    /** Get the BlockDevice class type.
+     *
+     *  @return         A string represent the BlockDevice class type.
+     */
+    virtual const char * get_type();
+
 private:
 
     // Internal functions
@@ -295,6 +301,7 @@ private:
     unsigned int _dummy_and_mode_cycles; // Number of Dummy and Mode Bits required by Current Bus Mode
     uint32_t _init_ref_count;
     bool _is_initialized;
+    static const char *_type;
 };
 
 #endif  /* MBED_SPIF_BLOCK_DEVICE_H */
