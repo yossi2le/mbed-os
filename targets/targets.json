@@ -47,50 +47,42 @@
             "secure-rom-start": {
                 "help": "Starting address of Secure ROM",
                 "value": null,
-                "macro_name": "PSA_SECURE_ROM_START",
-                "conflicts": ["target.mbed_rom_start"]
+                "macro_name": "PSA_SECURE_ROM_START"
             },
             "secure-rom-size": {
                 "help": "Size in bytes of Secure ROM",
                 "value": null,
-                "macro_name": "PSA_SECURE_ROM_SIZE",
-                "conflicts": ["target.mbed_rom_size"]
+                "macro_name": "PSA_SECURE_ROM_SIZE"
             },
             "non-secure-rom-start": {
                 "help": "Starting address of Non-secure ROM",
                 "value": null,
-                "macro_name": "PSA_NON_SECURE_ROM_START",
-                "conflicts": ["target.mbed_rom_start"]
+                "macro_name": "PSA_NON_SECURE_ROM_START"
             },
             "non-secure-rom-size": {
                 "help": "Size in bytes of Non-secure ROM",
                 "value": null,
-                "macro_name": "PSA_NON_SECURE_ROM_SIZE",
-                "conflicts": ["target.mbed_rom_size"]
+                "macro_name": "PSA_NON_SECURE_ROM_SIZE"
             },
             "secure-ram-start": {
                 "help": "Starting address of Secure RAM",
                 "value": null,
-                "macro_name": "PSA_SECURE_RAM_START",
-                "conflicts": ["target.mbed_ram_start"]
+                "macro_name": "PSA_SECURE_RAM_START"
             },
             "secure-ram-size": {
                 "help": "Size in bytes of Secure RAM",
                 "value": null,
-                "macro_name": "PSA_SECURE_RAM_SIZE",
-                "conflicts": ["target.mbed_ram_size"]
+                "macro_name": "PSA_SECURE_RAM_SIZE"
             },
             "non-secure-ram-start": {
                 "help": "Starting address of Non-secure RAM",
                 "value": null,
-                "macro_name": "PSA_NON_SECURE_RAM_START",
-                "conflicts": ["target.mbed_ram_start"]
+                "macro_name": "PSA_NON_SECURE_RAM_START"
             },
             "non-secure-ram-size": {
                 "help": "Size in bytes of Non-secure RAM",
                 "value": null,
-                "macro_name": "PSA_NON_SECURE_RAM_SIZE",
-                "conflicts": ["target.mbed_ram_size"]
+                "macro_name": "PSA_NON_SECURE_RAM_SIZE"
             },
             "shared-ram-start": {
                 "help": "Starting address of Shared RAM between Secure and Non-secure worlds",
@@ -8031,7 +8023,8 @@
             "non-secure-ram-size": "0x37700",
             "shared-ram-start": "0x08047700",
             "shared-ram-size": "0x100"
-        }
+        },
+        "device_name": "FUTURESEQUANAPSA01"
     },
     "TMPM3HQ": {
         "inherits": ["Target"],
