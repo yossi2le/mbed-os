@@ -8024,7 +8024,8 @@
             "shared-ram-start": "0x08047700",
             "shared-ram-size": "0x100"
         },
-        "device_name": "FUTURESEQUANAPSA01"
+        "device_name": "FUTURESEQUANAPSA01",
+        "bootloader_supported": true
     },
     "TMPM3HQ": {
         "inherits": ["Target"],
