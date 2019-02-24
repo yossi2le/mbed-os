@@ -16,6 +16,12 @@
         "NUCLEO_F070RB": {
              "TEST_BUFFER": 4096
         },
+        "FUTURE_SEQUANA_PSA": {
+             "SPI_MOSI": "P12_0",
+             "SPI_MISO": "P12_1",
+             "SPI_CLK":  "P12_2",
+             "SPI_CS":   "P12_3"
+        },
         "NUCLEO_F072RB": {
              "TEST_BUFFER": 4096
         },

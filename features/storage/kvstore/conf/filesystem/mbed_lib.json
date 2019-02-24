@@ -33,6 +33,13 @@
             "help": "Path for the working directory where the FileSystemStore stores the data",
             "value": "kvstore"
         }
+    },
+    "target_overrides": {
+        "FUTURE_SEQUANA_PSA": {
+            "filesystem": "LITTLE",
+            "internal_base_address": "0x100F8000",
+            "rbp_internal_size":"(2*8*1024)"
+        }
     }
 }
 

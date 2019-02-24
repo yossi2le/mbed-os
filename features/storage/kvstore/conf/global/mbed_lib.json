@@ -14,6 +14,9 @@
         "FUTURE_SEQUANA_M0_PSA": {
             "storage_type": "TDB_INTERNAL"
         },
+        "FUTURE_SEQUANA_PSA": {
+            "storage_type": "FILESYSTEM"
+        },
         "K66F": {
             "storage_type": "TDB_INTERNAL"
         },
