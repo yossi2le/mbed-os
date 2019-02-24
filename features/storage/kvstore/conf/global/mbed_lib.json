@@ -17,6 +17,9 @@
         "FUTURE_SEQUANA_PSA": {
             "storage_type": "FILESYSTEM"
         },
+        "CY8CKIT_062_BLE": {
+            "storage_type": "FILESYSTEM"
+        },
         "K66F": {
             "storage_type": "TDB_INTERNAL"
         },

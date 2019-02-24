@@ -7890,6 +7890,7 @@
     },
     "CY8CKIT_062_BLE": {
         "inherits": ["MCU_PSOC6_M4"],
+        "components_add": [ "SD", "FLASHIAP" ],
         "supported_form_factors": ["ARDUINO"],
         "extra_labels_add": ["PSOC6_01"],
         "macros_add": ["CY8C6347BZI_BLD53", "PSOC6_DYNSRM_DISABLE=1"],
