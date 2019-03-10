@@ -32,8 +32,16 @@ ENTRY(Reset_Handler)
   #define MBED_ROM_START    0x10080000
 #endif
 
+#if !defined(MBED_APP_START)
+  #define MBED_APP_START MBED_ROM_START
+#endif
+
 #if !defined(MBED_ROM_SIZE)
   #define MBED_ROM_SIZE     0x78000
+#endif
+
+#if !defined(MBED_APP_SIZE)
+  #define MBED_APP_SIZE MBED_ROM_SIZE
 #endif
 
 #if !defined(MBED_RAM_START)
@@ -71,7 +79,7 @@ MEMORY
      * where 'xx' is the device group; for example, 'cy8c6xx7_cm0plus.ld'.
      */
     ram               (rwx)   : ORIGIN = MBED_RAM_START, LENGTH = MBED_RAM_SIZE
-    flash             (rx)    : ORIGIN = MBED_ROM_START, LENGTH = MBED_ROM_SIZE
+    flash             (rx)    : ORIGIN = MBED_APP_START, LENGTH = MBED_APP_SIZE
 
     /* This is a 32K flash region used for EEPROM emulation. This region can also be used as the general purpose flash.
      * You can assign sections to this memory region for only one of the cores.
@@ -388,7 +396,7 @@ SECTIONS
     /* These sections are used for additional metadata (silicon revision,
     *  Silicon/JTAG ID, etc.) storage.
     */
-    .cymeta         0x90500000 : { KEEP(*(.cymeta)) } :NONE
+    /*.cymeta         0x90500000 : { KEEP(*(.cymeta)) } :NONE*/
 }
 
 
